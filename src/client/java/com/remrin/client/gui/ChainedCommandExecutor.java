@@ -248,6 +248,17 @@ public class ChainedCommandExecutor {
 		}
 	}
 	
+	public static void sendCommand(String command) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc != null && mc.player != null) {
+			if (command.startsWith("/")) {
+				mc.player.connection.sendCommand(command.substring(1));
+			} else {
+				mc.player.connection.sendChat(command);
+			}
+		}
+	}
+
 	public static boolean hasPlaceholders(String command) {
 		return command != null && (
 			command.contains("{player_all}") ||

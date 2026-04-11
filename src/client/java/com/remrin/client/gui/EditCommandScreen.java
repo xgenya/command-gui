@@ -1,236 +1,57 @@
 package com.remrin.client.gui;
 
 import com.remrin.client.config.CommandConfig;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CommandSuggestions;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
-import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
-public class EditCommandScreen extends Screen {
-	private static final String[] TYPE_KEYS = {
-		"screen.command-gui.type.player_all_full",
-		"screen.command-gui.type.player_other_full",
-		"screen.command-gui.type.player_fake_full",
-		"screen.command-gui.type.text_full",
-		"screen.command-gui.type.number_full",
-		"screen.command-gui.type.coord_full"
-	};
-	
-	private static final String[] PLACEHOLDERS = {
-		"{player_all}",
-		"{player}",
-		"{player_fake}",
-		"{name}",
-		"{number}",
-		"{coords}"
-	};
-	
-	private static final int PLACEHOLDER_BTN_HEIGHT = 16;
-	private static final int PLACEHOLDER_BTNS_PER_ROW = 3;
-	private static final int INPUT_HEIGHT = 16;
-	private static final int CONTENT_WIDTH = 170;
-	private static final int LABEL_WIDTH = 45;
-	private static final int ROW_GAP = 20;
-	private static final int Y_OFFSET = -20;
-	private static final int BTN_GAP = 4;
-
-	private final CommandGUIScreen parent;
+public class EditCommandScreen extends BaseCommandEditorScreen {
 	private final String originalName;
 	private final String originalCommand;
 	private final String originalDescription;
-	private EditBox nameField;
-	private EditBox descriptionField;
-	private EditBox commandField;
-	private CommandSuggestions commandSuggestions;
 
 	public EditCommandScreen(CommandGUIScreen parent, String name, CommandConfig.CommandEntry entry) {
-		super(Component.translatable("screen.command-gui.edit_title"));
-		this.parent = parent;
+		super(Component.translatable("screen.command-gui.edit_title"), parent);
 		this.originalName = name;
 		this.originalCommand = entry.command;
 		this.originalDescription = entry.description;
 	}
 
 	@Override
-	protected void init() {
-		super.init();
-
-		int centerX = this.width / 2;
-		int centerY = this.height / 2 + Y_OFFSET;
-		int fieldX = centerX - CONTENT_WIDTH / 2 + LABEL_WIDTH;
-
-		int currentY = centerY - 30;
-		nameField = new EditBox(this.font, fieldX, currentY, CONTENT_WIDTH, INPUT_HEIGHT,
-				Component.translatable("screen.command-gui.name"));
-		nameField.setMaxLength(50);
-		nameField.setValue(originalName);
-		this.addRenderableWidget(nameField);
-		this.setInitialFocus(nameField);
-
-		currentY += ROW_GAP;
-		descriptionField = new EditBox(this.font, fieldX, currentY, CONTENT_WIDTH, INPUT_HEIGHT,
-				Component.translatable("screen.command-gui.description"));
-		descriptionField.setMaxLength(100);
-		descriptionField.setValue(originalDescription != null ? originalDescription : "");
-		descriptionField.setHint(Component.translatable("screen.command-gui.description_hint"));
-		this.addRenderableWidget(descriptionField);
-
-		currentY += ROW_GAP + 4;
-		int placeholderBtnWidth = (CONTENT_WIDTH - BTN_GAP * (PLACEHOLDER_BTNS_PER_ROW - 1)) / PLACEHOLDER_BTNS_PER_ROW;
-		
-		for (int i = 0; i < TYPE_KEYS.length; i++) {
-			final int index = i;
-			int row = i / PLACEHOLDER_BTNS_PER_ROW;
-			int col = i % PLACEHOLDER_BTNS_PER_ROW;
-			int btnX = fieldX + col * (placeholderBtnWidth + BTN_GAP);
-			int btnY = currentY + row * (PLACEHOLDER_BTN_HEIGHT + 2);
-			
-			Button typeBtn = Button.builder(
-					Component.translatable(TYPE_KEYS[i]),
-					btn -> appendPlaceholder(index)
-			).bounds(btnX, btnY, placeholderBtnWidth, PLACEHOLDER_BTN_HEIGHT).build();
-			this.addRenderableWidget(typeBtn);
-		}
-
-		commandField = new EditBox(this.font, 4, this.height - 12, this.width - 8, 12,
-				Component.translatable("screen.command-gui.command"));
-		commandField.setMaxLength(256);
-		commandField.setValue(originalCommand != null ? originalCommand : "");
-		commandField.setBordered(false);
-		this.addRenderableWidget(commandField);
-
-		this.commandSuggestions = new CommandSuggestions(this.minecraft, this, commandField,
-				this.font, false, false, 1, 10, true, -805306368);
-		this.commandSuggestions.setAllowSuggestions(true);
-		this.commandSuggestions.updateCommandInfo();
-
-		commandField.setResponder(text -> this.commandSuggestions.updateCommandInfo());
+	protected int getFieldStartY(int centerY) {
+		return centerY - 30;
 	}
 
-	private void appendPlaceholder(int index) {
-		String placeholder = PLACEHOLDERS[index];
-		String current = commandField.getValue();
-		if (!current.isEmpty() && !current.endsWith(" ")) {
-			current += " ";
-		}
-		commandField.setValue(current + placeholder);
-		this.setFocused(commandField);
+	@Override
+	protected int getTitleY(int centerY) {
+		return centerY - 45;
 	}
 
-	private void saveAndClose() {
+	@Override
+	protected String getInitialName() {
+		return originalName;
+	}
+
+	@Override
+	protected String getInitialDescription() {
+		return originalDescription != null ? originalDescription : "";
+	}
+
+	@Override
+	protected String getInitialCommand() {
+		return originalCommand != null ? originalCommand : "";
+	}
+
+	@Override
+	protected void performSave() {
 		String newName = nameField.getValue().trim();
 		String newCommand = commandField.getValue().trim();
 		String newDescription = descriptionField.getValue().trim();
-		if (!newName.isEmpty() && !newCommand.isEmpty()) {
-			if (!newName.equals(originalName)) {
-				CommandConfig.removeCommand(originalName);
-			}
+
+		if (!newName.equals(originalName)) {
+			String categoryId = CommandConfig.findCommandCategory(originalName);
+			CommandConfig.removeCommand(originalName);
+			CommandConfig.addCommand(categoryId != null ? categoryId : "default", newName, newCommand, newDescription);
+		} else {
 			CommandConfig.updateCommand(newName, newCommand, newDescription);
-			parent.refresh();
-			this.minecraft.setScreen(parent);
 		}
-	}
-
-	@Override
-	public void resize(int width, int height) {
-		String name = this.nameField.getValue();
-		String description = this.descriptionField.getValue();
-		String command = this.commandField.getValue();
-		super.resize(width, height);
-		this.nameField.setValue(name);
-		this.descriptionField.setValue(description);
-		this.commandField.setValue(command);
-		this.commandSuggestions.updateCommandInfo();
-	}
-
-	@Override
-	public boolean keyPressed(KeyEvent keyEvent) {
-		int keyCode = keyEvent.key();
-		
-		if (this.commandSuggestions.keyPressed(keyEvent)) {
-			return true;
-		}
-		
-		if (keyCode == GLFW.GLFW_KEY_TAB) {
-			return true;
-		}
-		
-		if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-			String name = nameField.getValue().trim();
-			String command = commandField.getValue().trim();
-			if (!name.isEmpty() && !command.isEmpty()) {
-				saveAndClose();
-				return true;
-			}
-			return true;
-		}
-		
-		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-			this.minecraft.setScreen(parent);
-			return true;
-		}
-		
-		return super.keyPressed(keyEvent);
-	}
-
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (this.commandSuggestions.mouseScrolled(scrollY)) {
-			return true;
-		}
-		return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
-	}
-
-	@Override
-	public boolean mouseClicked(MouseButtonEvent mouseEvent, boolean focused) {
-		if (this.commandSuggestions.mouseClicked(mouseEvent)) {
-			return true;
-		}
-		return super.mouseClicked(mouseEvent, focused);
-	}
-
-	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-		super.render(guiGraphics, mouseX, mouseY, partialTick);
-		
-		int centerX = this.width / 2;
-		int centerY = this.height / 2 + Y_OFFSET;
-		int labelX = centerX - CONTENT_WIDTH / 2 - 4;
-		
-		guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 45, 0xFFFFFFFF);
-		
-		// Labels on the left side of input fields
-		int currentY = centerY - 30;
-		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.name"),
-				labelX - this.font.width(Component.translatable("screen.command-gui.name")), currentY + 4, 0xFFAAAAAA);
-		
-		currentY += ROW_GAP;
-		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.description"),
-				labelX - this.font.width(Component.translatable("screen.command-gui.description")), currentY + 4, 0xFFAAAAAA);
-		
-		currentY += ROW_GAP + 4;
-		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.placeholder_label"),
-				labelX - this.font.width(Component.translatable("screen.command-gui.placeholder_label")), currentY + 4, 0xFFAAAAAA);
-		
-		guiGraphics.fill(2, this.height - 14, this.width - 2, this.height - 2, 0x80000000);
-		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.command"),
-				4, this.height - 24, 0xFFAAAAAA);
-		
-		int rows = (TYPE_KEYS.length + PLACEHOLDER_BTNS_PER_ROW - 1) / PLACEHOLDER_BTNS_PER_ROW;
-		guiGraphics.drawCenteredString(this.font, 
-				Component.translatable("screen.command-gui.enter_to_save"),
-				centerX, currentY + rows * (PLACEHOLDER_BTN_HEIGHT + 2) + 8, 0xFF888888);
-		
-		this.commandSuggestions.render(guiGraphics, mouseX, mouseY);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }

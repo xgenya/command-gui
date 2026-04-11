@@ -12,12 +12,11 @@ import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NumberInputScreen extends Screen {
+public class NumberInputScreen extends BaseParentedScreen<Screen> {
 	private static final int BUTTON_WIDTH = 50;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int BUTTONS_PER_ROW = 5;
 
-	private final Screen parent;
 	private final String commandTemplate;
 	private final int minValue;
 	private final int maxValue;
@@ -26,8 +25,7 @@ public class NumberInputScreen extends Screen {
 	private EditBox inputField;
 
 	public NumberInputScreen(Screen parent, Component title, String commandTemplate, Integer minValue, Integer maxValue, int[] quickValues) {
-		super(title);
-		this.parent = parent;
+		super(title, parent);
 		this.commandTemplate = commandTemplate;
 		this.minValue = minValue != null ? minValue : 0;
 		this.maxValue = maxValue != null ? maxValue : Integer.MAX_VALUE;
@@ -106,7 +104,6 @@ public class NumberInputScreen extends Screen {
 	}
 
 	protected void onNumberConfirmed(String number) {
-		// Override this for custom behavior
 	}
 
 	private void executeWithValue(int value) {
@@ -147,11 +144,7 @@ public class NumberInputScreen extends Screen {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc != null && mc.player != null) {
 			mc.setScreen(null);
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendChat(command);
-			}
+			ChainedCommandExecutor.sendCommand(command);
 		}
 	}
 
@@ -166,15 +159,5 @@ public class NumberInputScreen extends Screen {
 		guiGraphics.drawCenteredString(this.font,
 				Component.translatable("screen.command-gui.number_range", minValue, maxValue),
 				centerX, centerY - 55, 0xFF888888);
-	}
-
-	@Override
-	public void onClose() {
-		this.minecraft.setScreen(parent);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }

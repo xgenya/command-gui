@@ -3,6 +3,7 @@ package com.remrin.client.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.remrin.CommandGUI;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -66,7 +67,9 @@ public class CommandConfig {
 
 		public boolean hasPlaceholders() {
 			return command != null && (
+				command.contains("{player_all}") ||
 				command.contains("{player}") ||
+				command.contains("{player_fake}") ||
 				command.contains("{name}") ||
 				command.contains("{number}") ||
 				command.contains("{coords}") ||
@@ -83,7 +86,7 @@ public class CommandConfig {
 					configData = loaded;
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				CommandGUI.LOGGER.error("Failed to load command config", e);
 			}
 		}
 	}
@@ -95,7 +98,7 @@ public class CommandConfig {
 				GSON.toJson(configData, writer);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			CommandGUI.LOGGER.error("Failed to save command config", e);
 		}
 	}
 

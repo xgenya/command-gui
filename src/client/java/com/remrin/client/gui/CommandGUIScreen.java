@@ -20,6 +20,9 @@ public class CommandGUIScreen extends Screen {
 	private static final int FOOTER_HEIGHT = 33;
 	private static final int PADDING = 10;
 	private static final int SCROLLBAR_WIDTH = 6;
+	private static final int CONTEXT_MENU_WIDTH = 60;
+	private static final int CONTEXT_MENU_HEIGHT = 40;
+	private static final int CONTEXT_MENU_ITEM_HEIGHT = 20;
 
 	private static int lastSelectedTabIndex = 0;
 	private static boolean keepOpenAfterExecute = false;
@@ -287,13 +290,13 @@ public class CommandGUIScreen extends Screen {
 		int button = mouseEvent.button();
 
 		if (contextMenuName != null) {
-			int menuWidth = 60;
-			int menuHeight = 40;
+			int menuWidth = CONTEXT_MENU_WIDTH;
+			int menuHeight = CONTEXT_MENU_HEIGHT;
 
 			if (mouseX >= contextMenuX && mouseX < contextMenuX + menuWidth &&
 					mouseY >= contextMenuY && mouseY < contextMenuY + menuHeight) {
 
-				if (mouseY < contextMenuY + 20) {
+				if (mouseY < contextMenuY + CONTEXT_MENU_ITEM_HEIGHT) {
 					this.minecraft.setScreen(new EditCommandScreen(this, contextMenuName, contextMenuEntry));
 					return true;
 				} else {
@@ -314,7 +317,7 @@ public class CommandGUIScreen extends Screen {
 				if (btn.visible && mouseX >= btn.getX() && mouseX < btn.getX() + btn.getWidth() &&
 						mouseY >= btn.getY() && mouseY < btn.getY() + btn.getHeight()) {
 					String name = btn.getMessage().getString();
-					String categoryId = customTab.findCommandCategory(name);
+					String categoryId = CommandConfig.findCommandCategory(name);
 					if (categoryId != null) {
 						CommandConfig.CommandEntry entry = CommandConfig.getCommandsByCategory(categoryId).get(name);
 						if (entry != null) {
@@ -343,7 +346,7 @@ public class CommandGUIScreen extends Screen {
 
 		Tab currentTab = tabManager.getCurrentTab();
 		if (currentTab == customTab) {
-			customTab.renderCategories(guiGraphics, mouseX, mouseY);
+			customTab.renderSeparator(guiGraphics);
 			
 			guiGraphics.drawCenteredString(this.font,
 					Component.translatable("screen.command-gui.right_click_hint"),
@@ -360,15 +363,15 @@ public class CommandGUIScreen extends Screen {
 		} else {
 			for (PresetCommandTab presetTab : presetTabs) {
 				if (currentTab == presetTab) {
-					presetTab.renderCategoryTabs(guiGraphics, mouseX, mouseY);
+					presetTab.renderSeparator(guiGraphics);
 					break;
 				}
 			}
 		}
 
 		if (contextMenuName != null) {
-			int menuWidth = 60;
-			int menuHeight = 40;
+			int menuWidth = CONTEXT_MENU_WIDTH;
+			int menuHeight = CONTEXT_MENU_HEIGHT;
 
 			int menuX = contextMenuX;
 			int menuY = contextMenuY;
@@ -379,15 +382,15 @@ public class CommandGUIScreen extends Screen {
 			guiGraphics.fill(menuX, menuY, menuX + menuWidth, menuY + menuHeight, 0xFF000000);
 
 			boolean hoverEdit = mouseX >= menuX && mouseX < menuX + menuWidth &&
-					mouseY >= menuY && mouseY < menuY + 20;
+					mouseY >= menuY && mouseY < menuY + CONTEXT_MENU_ITEM_HEIGHT;
 			boolean hoverDelete = mouseX >= menuX && mouseX < menuX + menuWidth &&
-					mouseY >= menuY + 20 && mouseY < menuY + 40;
+					mouseY >= menuY + CONTEXT_MENU_ITEM_HEIGHT && mouseY < menuY + CONTEXT_MENU_HEIGHT;
 
 			if (hoverEdit) {
-				guiGraphics.fill(menuX, menuY, menuX + menuWidth, menuY + 20, 0xFF444444);
+				guiGraphics.fill(menuX, menuY, menuX + menuWidth, menuY + CONTEXT_MENU_ITEM_HEIGHT, 0xFF444444);
 			}
 			if (hoverDelete) {
-				guiGraphics.fill(menuX, menuY + 20, menuX + menuWidth, menuY + 40, 0xFF444444);
+				guiGraphics.fill(menuX, menuY + CONTEXT_MENU_ITEM_HEIGHT, menuX + menuWidth, menuY + CONTEXT_MENU_HEIGHT, 0xFF444444);
 			}
 
 			guiGraphics.drawCenteredString(this.font,

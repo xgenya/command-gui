@@ -9,13 +9,11 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-public class AddCategoryScreen extends Screen {
-	private final CommandGUIScreen parent;
+public class AddCategoryScreen extends BaseParentedScreen<CommandGUIScreen> {
 	private EditBox nameField;
 
 	public AddCategoryScreen(CommandGUIScreen parent) {
-		super(Component.translatable("screen.command-gui.add_category_title"));
-		this.parent = parent;
+		super(Component.translatable("screen.command-gui.add_category_title"), parent);
 	}
 
 	@Override
@@ -108,10 +106,5 @@ public class AddCategoryScreen extends Screen {
 			parent.refresh();
 		}
 		this.minecraft.setScreen(parent);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }

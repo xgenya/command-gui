@@ -9,8 +9,7 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-public class CoordinateInputScreen extends Screen {
-	private final Screen parent;
+public class CoordinateInputScreen extends BaseParentedScreen<Screen> {
 	private final String commandTemplate;
 	
 	private EditBox xField;
@@ -18,8 +17,7 @@ public class CoordinateInputScreen extends Screen {
 	private EditBox zField;
 
 	public CoordinateInputScreen(Screen parent, Component title, String commandTemplate) {
-		super(title);
-		this.parent = parent;
+		super(title, parent);
 		this.commandTemplate = commandTemplate;
 	}
 
@@ -108,7 +106,6 @@ public class CoordinateInputScreen extends Screen {
 	}
 
 	protected void onCoordsConfirmed(String x, String y, String z) {
-		// Override this for custom behavior
 	}
 
 	@Override
@@ -156,11 +153,7 @@ public class CoordinateInputScreen extends Screen {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc != null && mc.player != null) {
 			mc.setScreen(null);
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendChat(command);
-			}
+			ChainedCommandExecutor.sendCommand(command);
 		}
 	}
 
@@ -185,15 +178,5 @@ public class CoordinateInputScreen extends Screen {
 		guiGraphics.drawCenteredString(this.font,
 				Component.translatable("screen.command-gui.enter_to_confirm"),
 				centerX, centerY + 90, 0xFF888888);
-	}
-
-	@Override
-	public void onClose() {
-		this.minecraft.setScreen(parent);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }
