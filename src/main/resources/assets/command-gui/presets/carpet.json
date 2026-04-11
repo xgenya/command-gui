@@ -1,0 +1,108 @@
+{
+	"id": "carpet",
+	"nameKey": "screen.command-gui.preset.carpet",
+	"groups": [
+		{
+			"nameKey": "screen.command-gui.carpet.tick",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.tick.freeze", "command": "/tick freeze"},
+				{"nameKey": "screen.command-gui.carpet.tick.step", "command": "/tick step {number}", "minValue": 1, "maxValue": 72000, "quickValues": [1, 5, 10, 20, 50, 100, 200, 1000]},
+				{"nameKey": "screen.command-gui.carpet.tick.rate", "command": "/tick rate {number}", "minValue": 1, "maxValue": 500, "quickValues": [1, 5, 10, 20, 40, 60, 100, 200]},
+				{"nameKey": "screen.command-gui.carpet.tick.warp", "command": "/tick warp {number}", "minValue": 0, "maxValue": 720000, "quickValues": [0, 1000, 6000, 12000, 24000, 72000, 144000]},
+				{"nameKey": "screen.command-gui.carpet.tick.superhot", "command": "/tick superHot"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.player.spawn_group",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.player.spawn", "command": "/player {name} spawn"},
+				{"nameKey": "screen.command-gui.carpet.player.spawn_at", "command": "/player {name} spawn at {coords}"},
+				{"nameKey": "screen.command-gui.carpet.player.kill", "command": "/player {player_fake} kill"},
+				{"nameKey": "screen.command-gui.carpet.player.stop", "command": "/player {player_fake} stop"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.player.action",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.player.attack", "command": "/player {player_fake} attack continuous"},
+				{"nameKey": "screen.command-gui.carpet.player.attack_once", "command": "/player {player_fake} attack once"},
+				{"nameKey": "screen.command-gui.carpet.player.use", "command": "/player {player_fake} use continuous"},
+				{"nameKey": "screen.command-gui.carpet.player.use_once", "command": "/player {player_fake} use once"},
+				{"nameKey": "screen.command-gui.carpet.player.jump", "command": "/player {player_fake} jump"},
+				{"nameKey": "screen.command-gui.carpet.player.drop", "command": "/player {player_fake} drop"},
+				{"nameKey": "screen.command-gui.carpet.player.dropstack", "command": "/player {player_fake} dropStack"},
+				{"nameKey": "screen.command-gui.carpet.player.swaphands", "command": "/player {player_fake} swapHands"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.player.move",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.player.sneak", "command": "/player {player_fake} sneak"},
+				{"nameKey": "screen.command-gui.carpet.player.unsneak", "command": "/player {player_fake} unsneak"},
+				{"nameKey": "screen.command-gui.carpet.player.sprint", "command": "/player {player_fake} sprint"},
+				{"nameKey": "screen.command-gui.carpet.player.unsprint", "command": "/player {player_fake} unsprint"},
+				{"nameKey": "screen.command-gui.carpet.player.mount", "command": "/player {player_fake} mount"},
+				{"nameKey": "screen.command-gui.carpet.player.dismount", "command": "/player {player_fake} dismount"},
+				{"nameKey": "screen.command-gui.carpet.player.turn", "command": "/player {player_fake} turn"},
+				{"nameKey": "screen.command-gui.carpet.player.look", "command": "/player {player_fake} look at {coords}"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.log",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.log.list", "command": "/log"},
+				{"nameKey": "screen.command-gui.carpet.log.clear", "command": "/log clear"},
+				{"nameKey": "screen.command-gui.carpet.log.tps", "command": "/log tps"},
+				{"nameKey": "screen.command-gui.carpet.log.mobcaps", "command": "/log mobcaps"},
+				{"nameKey": "screen.command-gui.carpet.log.mobcaps_dynamic", "command": "/log mobcaps dynamic"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.log.tracking",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.log.tnt", "command": "/log tnt"},
+				{"nameKey": "screen.command-gui.carpet.log.projectiles", "command": "/log projectiles"},
+				{"nameKey": "screen.command-gui.carpet.log.packets", "command": "/log packets"},
+				{"nameKey": "screen.command-gui.carpet.log.pathfinding", "command": "/log pathfinding"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.info",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.carpet_list", "command": "/carpet list"},
+				{"nameKey": "screen.command-gui.carpet.tick.health", "command": "/tick health"},
+				{"nameKey": "screen.command-gui.carpet.tick.entities", "command": "/tick entities"},
+				{"nameKey": "screen.command-gui.carpet.ping", "command": "/ping"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.info.block",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.info_block", "command": "/info block {coords}"},
+				{"nameKey": "screen.command-gui.carpet.info_block_here", "command": "/info block ~ ~ ~"},
+				{"nameKey": "screen.command-gui.carpet.perimeterinfo", "command": "/perimeterinfo {coords}"},
+				{"nameKey": "screen.command-gui.carpet.perimeterinfo_here", "command": "/perimeterinfo ~ ~ ~"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.distance",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.distance_from", "command": "/distance from"},
+				{"nameKey": "screen.command-gui.carpet.distance_to", "command": "/distance to"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.track",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.track.villager_breeding", "command": "/track villager breeding"},
+				{"nameKey": "screen.command-gui.carpet.track.villager_iron_golem", "command": "/track villager iron_golem_spawning"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.carpet.script",
+			"commands": [
+				{"nameKey": "screen.command-gui.carpet.script.list", "command": "/script list"}
+			]
+		}
+	]
+}

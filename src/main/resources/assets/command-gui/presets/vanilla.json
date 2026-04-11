@@ -1,0 +1,70 @@
+{
+	"id": "vanilla",
+	"nameKey": "screen.command-gui.tab.vanilla",
+	"groups": [
+		{
+			"nameKey": "screen.command-gui.vanilla.gamemode",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.gamemode.survival", "command": "/gamemode survival"},
+				{"nameKey": "screen.command-gui.vanilla.gamemode.creative", "command": "/gamemode creative"},
+				{"nameKey": "screen.command-gui.vanilla.gamemode.adventure", "command": "/gamemode adventure"},
+				{"nameKey": "screen.command-gui.vanilla.gamemode.spectator", "command": "/gamemode spectator"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.vanilla.time",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.time.day", "command": "/time set day"},
+				{"nameKey": "screen.command-gui.vanilla.time.noon", "command": "/time set noon"},
+				{"nameKey": "screen.command-gui.vanilla.time.night", "command": "/time set night"},
+				{"nameKey": "screen.command-gui.vanilla.time.midnight", "command": "/time set midnight"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.vanilla.weather",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.weather.clear", "command": "/weather clear"},
+				{"nameKey": "screen.command-gui.vanilla.weather.rain", "command": "/weather rain"},
+				{"nameKey": "screen.command-gui.vanilla.weather.thunder", "command": "/weather thunder"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.vanilla.difficulty",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.difficulty.peaceful", "command": "/difficulty peaceful"},
+				{"nameKey": "screen.command-gui.vanilla.difficulty.easy", "command": "/difficulty easy"},
+				{"nameKey": "screen.command-gui.vanilla.difficulty.normal", "command": "/difficulty normal"},
+				{"nameKey": "screen.command-gui.vanilla.difficulty.hard", "command": "/difficulty hard"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.vanilla.tp",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.tp.player", "command": "/tp {player}"},
+				{"nameKey": "screen.command-gui.vanilla.tp.coords", "command": "/tp @s {coords}"},
+				{"nameKey": "screen.command-gui.vanilla.tp.spawn", "command": "/tp @s 0 ~ 0"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.vanilla.player",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.kill.self", "command": "/kill @s"},
+				{"nameKey": "screen.command-gui.vanilla.heal.full", "command": "/effect give @s minecraft:instant_health 1 255"},
+				{"nameKey": "screen.command-gui.vanilla.heal.feed", "command": "/effect give @s minecraft:saturation 1 255"},
+				{"nameKey": "screen.command-gui.vanilla.effect.clear", "command": "/effect clear @s"}
+			]
+		},
+		{
+			"nameKey": "screen.command-gui.vanilla.world",
+			"commands": [
+				{"nameKey": "screen.command-gui.vanilla.kill.entities", "command": "/kill @e[type=!player]"},
+				{"nameKey": "screen.command-gui.vanilla.gamerule.keepinv_on", "command": "/gamerule keepInventory true"},
+				{"nameKey": "screen.command-gui.vanilla.gamerule.keepinv_off", "command": "/gamerule keepInventory false"},
+				{"nameKey": "screen.command-gui.vanilla.gamerule.mobgriefing_on", "command": "/gamerule mobGriefing true"},
+				{"nameKey": "screen.command-gui.vanilla.gamerule.mobgriefing_off", "command": "/gamerule mobGriefing false"},
+				{"nameKey": "screen.command-gui.vanilla.gamerule.daylight_on", "command": "/gamerule doDaylightCycle true"},
+				{"nameKey": "screen.command-gui.vanilla.gamerule.daylight_off", "command": "/gamerule doDaylightCycle false"}
+			]
+		}
+	]
+}
