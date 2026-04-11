@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
@@ -42,11 +44,19 @@ jobs:
             !build/libs/*-dev.jar
           if-no-files-found: error
 
+      - name: Generate changelog
+        if: github.event_name == 'release'
+        uses: orhun/git-cliff-action@v4
+        id: changelog
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+
       - name: Upload JARs to Release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.content }}
           files: |
             build/libs/*.jar
             !build/libs/*-dev.jar
