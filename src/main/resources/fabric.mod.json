@@ -1,31 +1,30 @@
 {
 	"schemaVersion": 1,
-	"id": "easy-cmd",
+	"id": "command-gui",
 	"version": "${version}",
-	"name": "Easy-CMD",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Command-GUI",
+	"description": "A simple GUI mod for quickly executing commands. Supports custom commands with placeholders (player selection, text input, number input, coordinate input), preset command groups for Vanilla and Carpet Mod, and categorized command management.",
 	"authors": [
-		"Me!"
+		"Remrin"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/remrin/command-gui"
 	},
-	"license": "CC0-1.0",
-	"icon": "assets/easy-cmd/icon.png",
+	"license": "MIT",
+	"icon": "assets/command-gui/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.remrin.EasyCMD"
+			"com.remrin.CommandGUI"
 		],
 		"client": [
-			"com.remrin.client.EasyCMDClient"
+			"com.remrin.client.CommandGUIClient"
 		]
 	},
 	"mixins": [
-		"easy-cmd.mixins.json",
+		"command-gui.mixins.json",
 		{
-			"config": "easy-cmd.client.mixins.json",
+			"config": "command-gui.client.mixins.json",
 			"environment": "client"
 		}
 	],
