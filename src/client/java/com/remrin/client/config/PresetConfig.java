@@ -38,6 +38,7 @@ public class PresetConfig {
 	public static class PresetCommand {
 		public String nameKey;
 		public String command;
+		public String description;
 		public Integer minValue;
 		public Integer maxValue;
 		public int[] quickValues;
@@ -69,8 +70,6 @@ public class PresetConfig {
 				
 				String fileName = location.getPath().substring(location.getPath().lastIndexOf('/') + 1);
 				Path targetPath = PRESETS_DIR.resolve(fileName);
-				
-				if (Files.exists(targetPath)) continue;
 				
 				try (InputStream is = entry.getValue().open();
 					 Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {

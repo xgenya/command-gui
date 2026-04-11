@@ -4,6 +4,7 @@ import com.remrin.client.config.CommandConfig;
 import com.remrin.client.config.PresetConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -21,6 +22,8 @@ public class CommandGUIScreen extends Screen {
 	private static final int SCROLLBAR_WIDTH = 6;
 
 	private static int lastSelectedTabIndex = 0;
+	private static boolean keepOpenAfterExecute = false;
+	private static CommandGUIScreen currentInstance = null;
 
 	private TabManager tabManager;
 	private TabNavigationBar tabNavigationBar;
@@ -29,6 +32,7 @@ public class CommandGUIScreen extends Screen {
 
 	private EditBox searchField;
 	private Button addButton;
+	private Checkbox keepOpenCheckbox;
 	private String searchText = "";
 
 	private String contextMenuName = null;
@@ -56,12 +60,17 @@ public class CommandGUIScreen extends Screen {
 	protected void init() {
 		super.init();
 
+		currentInstance = this;
 		this.contextMenuName = null;
 		this.contextMenuEntry = null;
 
 		this.tabManager = new TabManager(w -> {}, w -> {});
 		
 		this.customTab = new CustomCommandTab(this);
+		this.customTab.setOnCategoryChanged(
+				this::removeCustomTabButtons,
+				this::addCustomTabButtons
+		);
 		
 		presetTabs.clear();
 		boolean hasPermission = hasCommandPermission();
@@ -69,7 +78,12 @@ public class CommandGUIScreen extends Screen {
 			if ("vanilla".equals(preset.id) && !hasPermission) {
 				continue;
 			}
-			presetTabs.add(new PresetCommandTab(this, preset.id, preset.nameKey));
+			PresetCommandTab tab = new PresetCommandTab(this, preset.id, preset.nameKey);
+			tab.setOnCategoryChanged(
+				() -> removePresetTabButtons(tab),
+				() -> addPresetTabButtons(tab)
+			);
+			presetTabs.add(tab);
 		}
 
 		TabNavigationBar.Builder builder = TabNavigationBar.builder(this.tabManager, this.width);
@@ -96,15 +110,21 @@ public class CommandGUIScreen extends Screen {
 
 		addButton = Button.builder(
 				Component.translatable("screen.command-gui.add"),
-				button -> this.minecraft.setScreen(new AddCommandScreen(this))
+				button -> this.minecraft.setScreen(new AddCommandScreen(this, customTab.getSelectedCategoryId()))
 		).bounds(PADDING + searchWidth + 5, searchY, 20, 20).build();
 		this.addRenderableWidget(addButton);
 
-		int closeBtnY = this.height - FOOTER_HEIGHT + 3;
+		int closeBtnY = this.height - FOOTER_HEIGHT + 6;
 		this.addRenderableWidget(Button.builder(
 				Component.translatable("screen.command-gui.close"),
 				button -> this.onClose()
-		).bounds(this.width / 2 - 75, closeBtnY, 150, 20).build());
+		).bounds(this.width / 2 + 30, closeBtnY, 60, 20).build());
+
+		keepOpenCheckbox = Checkbox.builder(
+				Component.translatable("screen.command-gui.keep_open"),
+				this.font
+		).pos(this.width / 2 - 120, closeBtnY).selected(keepOpenAfterExecute).build();
+		this.addRenderableWidget(keepOpenCheckbox);
 
 		this.tabNavigationBar.selectTab(lastSelectedTabIndex, false);
 		
@@ -132,21 +152,37 @@ public class CommandGUIScreen extends Screen {
 		addButton.visible = (currentTab == customTab);
 		addButton.active = (currentTab == customTab);
 		
+		boolean isCustomTab = (currentTab == customTab);
 		for (Button btn : customTab.getButtons()) {
 			if (!this.children().contains(btn)) {
 				this.addRenderableWidget(btn);
 			}
-			btn.visible = (currentTab == customTab);
-			btn.active = (currentTab == customTab);
+			btn.visible = isCustomTab;
+			btn.active = isCustomTab;
+		}
+		
+		for (Button btn : customTab.getCategoryButtons()) {
+			if (!this.children().contains(btn)) {
+				this.addRenderableWidget(btn);
+			}
+			btn.visible = isCustomTab;
 		}
 		
 		for (PresetCommandTab presetTab : presetTabs) {
+			boolean isCurrentTab = (currentTab == presetTab);
+			
 			for (Button btn : presetTab.getButtons()) {
 				if (!this.children().contains(btn)) {
 					this.addRenderableWidget(btn);
 				}
-				btn.visible = (currentTab == presetTab);
-				btn.active = (currentTab == presetTab);
+				btn.visible = isCurrentTab;
+			}
+			
+			for (Button btn : presetTab.getCategoryButtons()) {
+				if (!this.children().contains(btn)) {
+					this.addRenderableWidget(btn);
+				}
+				btn.visible = isCurrentTab;
 			}
 		}
 	}
@@ -173,8 +209,14 @@ public class CommandGUIScreen extends Screen {
 		for (Button btn : customTab.getButtons()) {
 			this.removeWidget(btn);
 		}
+		for (Button btn : customTab.getCategoryButtons()) {
+			this.removeWidget(btn);
+		}
 		for (PresetCommandTab presetTab : presetTabs) {
 			for (Button btn : presetTab.getButtons()) {
+				this.removeWidget(btn);
+			}
+			for (Button btn : presetTab.getCategoryButtons()) {
 				this.removeWidget(btn);
 			}
 		}
@@ -318,7 +360,7 @@ public class CommandGUIScreen extends Screen {
 		} else {
 			for (PresetCommandTab presetTab : presetTabs) {
 				if (currentTab == presetTab) {
-					presetTab.renderCategories(guiGraphics, mouseX, mouseY);
+					presetTab.renderCategoryTabs(guiGraphics, mouseX, mouseY);
 					break;
 				}
 			}
@@ -362,10 +404,59 @@ public class CommandGUIScreen extends Screen {
 		return false;
 	}
 
+	@Override
+	public void onClose() {
+		if (keepOpenCheckbox != null) {
+			keepOpenAfterExecute = keepOpenCheckbox.selected();
+		}
+		currentInstance = null;
+		super.onClose();
+	}
+
+	public static boolean shouldKeepOpen() {
+		if (currentInstance != null && currentInstance.keepOpenCheckbox != null) {
+			return currentInstance.keepOpenCheckbox.selected();
+		}
+		return keepOpenAfterExecute;
+	}
+
 	public void refresh() {
 		removeTabButtons();
 		customTab.refresh();
 		syncButtonsToScreen();
+	}
+
+	private void removeCustomTabButtons() {
+		for (Button btn : customTab.getCategoryButtons()) {
+			this.removeWidget(btn);
+		}
+		for (Button btn : customTab.getButtons()) {
+			this.removeWidget(btn);
+		}
+	}
+
+	private void addCustomTabButtons() {
+		for (Button btn : customTab.getCategoryButtons()) {
+			this.addRenderableWidget(btn);
+			btn.visible = true;
+		}
+		for (Button btn : customTab.getButtons()) {
+			this.addRenderableWidget(btn);
+			btn.visible = true;
+		}
+	}
+
+	private void removePresetTabButtons(PresetCommandTab tab) {
+		for (Button btn : tab.getButtons()) {
+			this.removeWidget(btn);
+		}
+	}
+
+	private void addPresetTabButtons(PresetCommandTab tab) {
+		for (Button btn : tab.getButtons()) {
+			this.addRenderableWidget(btn);
+			btn.visible = true;
+		}
 	}
 
 	private void renderScrollbar(GuiGraphics guiGraphics, int mouseX, int mouseY) {

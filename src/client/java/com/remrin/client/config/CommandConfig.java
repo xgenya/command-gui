@@ -35,6 +35,7 @@ public class CommandConfig {
 	public static class Category {
 		public String id;
 		public String nameKey;
+		public String displayName;
 		public LinkedHashMap<String, CommandEntry> commands = new LinkedHashMap<>();
 
 		public Category() {}
@@ -42,6 +43,13 @@ public class CommandConfig {
 		public Category(String id, String nameKey) {
 			this.id = id;
 			this.nameKey = nameKey;
+		}
+
+		public String getDisplayName() {
+			if (displayName != null && !displayName.isEmpty()) {
+				return displayName;
+			}
+			return null;
 		}
 	}
 
@@ -111,6 +119,15 @@ public class CommandConfig {
 	public static void addCategory(String id, String nameKey) {
 		if (getCategory(id) == null) {
 			configData.categories.add(new Category(id, nameKey));
+			save();
+		}
+	}
+
+	public static void addCategory(String id, String nameKey, String displayName) {
+		if (getCategory(id) == null) {
+			Category cat = new Category(id, nameKey);
+			cat.displayName = displayName;
+			configData.categories.add(cat);
 			save();
 		}
 	}

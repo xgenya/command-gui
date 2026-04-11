@@ -15,12 +15,12 @@ import java.util.List;
 
 public class AddCommandScreen extends Screen {
 	private static final String[] TYPE_KEYS = {
-		"screen.command-gui.type.player_all",
-		"screen.command-gui.type.player_other",
-		"screen.command-gui.type.player_fake",
-		"screen.command-gui.type.text",
-		"screen.command-gui.type.number",
-		"screen.command-gui.type.coord"
+		"screen.command-gui.type.player_all_full",
+		"screen.command-gui.type.player_other_full",
+		"screen.command-gui.type.player_fake_full",
+		"screen.command-gui.type.text_full",
+		"screen.command-gui.type.number_full",
+		"screen.command-gui.type.coord_full"
 	};
 	
 	private static final String[] PLACEHOLDERS = {
@@ -31,8 +31,18 @@ public class AddCommandScreen extends Screen {
 		"{number}",
 		"{coords}"
 	};
+	
+	private static final int PLACEHOLDER_BTN_HEIGHT = 16;
+	private static final int PLACEHOLDER_BTNS_PER_ROW = 3;
+	private static final int INPUT_HEIGHT = 16;
+	private static final int CONTENT_WIDTH = 170;
+	private static final int LABEL_WIDTH = 45;
+	private static final int ROW_GAP = 20;
+	private static final int Y_OFFSET = -20;
+	private static final int BTN_GAP = 4;
 
 	private final CommandGUIScreen parent;
+	private final String initialCategoryId;
 	private EditBox nameField;
 	private EditBox descriptionField;
 	private EditBox commandField;
@@ -43,8 +53,13 @@ public class AddCommandScreen extends Screen {
 	private Button categoryButton;
 
 	public AddCommandScreen(CommandGUIScreen parent) {
+		this(parent, null);
+	}
+
+	public AddCommandScreen(CommandGUIScreen parent, String initialCategoryId) {
 		super(Component.translatable("screen.command-gui.add_title"));
 		this.parent = parent;
+		this.initialCategoryId = initialCategoryId;
 	}
 
 	@Override
@@ -52,43 +67,59 @@ public class AddCommandScreen extends Screen {
 		super.init();
 		
 		categories = CommandConfig.getCategories();
+		
+		// Set initial category index based on initialCategoryId
+		if (initialCategoryId != null) {
+			for (int i = 0; i < categories.size(); i++) {
+				if (categories.get(i).id.equals(initialCategoryId)) {
+					selectedCategoryIndex = i;
+					break;
+				}
+			}
+		}
 
 		int centerX = this.width / 2;
-		int centerY = this.height / 2;
+		int centerY = this.height / 2 + Y_OFFSET;
+		int fieldX = centerX - CONTENT_WIDTH / 2 + LABEL_WIDTH;
 
-		nameField = new EditBox(this.font, centerX - 100, centerY - 80, 200, 20,
+		int currentY = centerY - 40;
+		nameField = new EditBox(this.font, fieldX, currentY, CONTENT_WIDTH, INPUT_HEIGHT,
 				Component.translatable("screen.command-gui.name"));
 		nameField.setMaxLength(50);
 		nameField.setHint(Component.translatable("screen.command-gui.name_hint"));
 		this.addRenderableWidget(nameField);
 		this.setInitialFocus(nameField);
 
-		descriptionField = new EditBox(this.font, centerX - 100, centerY - 40, 200, 20,
+		currentY += ROW_GAP;
+		descriptionField = new EditBox(this.font, fieldX, currentY, CONTENT_WIDTH, INPUT_HEIGHT,
 				Component.translatable("screen.command-gui.description"));
 		descriptionField.setMaxLength(100);
 		descriptionField.setHint(Component.translatable("screen.command-gui.description_hint"));
 		this.addRenderableWidget(descriptionField);
 
 		if (categories.size() > 1) {
+			currentY += ROW_GAP;
 			categoryButton = Button.builder(
 					getCategoryDisplayName(),
 					btn -> cycleCategory()
-			).bounds(centerX - 100, centerY, 200, 20).build();
+			).bounds(fieldX, currentY, CONTENT_WIDTH, INPUT_HEIGHT).build();
 			this.addRenderableWidget(categoryButton);
 		}
 
-		int typeY = categories.size() > 1 ? centerY + 30 : centerY + 10;
-		int btnWidth = 32;
-		int gap = 2;
-		int totalWidth = btnWidth * TYPE_KEYS.length + gap * (TYPE_KEYS.length - 1);
-		int startX = centerX - totalWidth / 2;
+		currentY += ROW_GAP + 4;
+		int placeholderBtnWidth = (CONTENT_WIDTH - BTN_GAP * (PLACEHOLDER_BTNS_PER_ROW - 1)) / PLACEHOLDER_BTNS_PER_ROW;
 		
 		for (int i = 0; i < TYPE_KEYS.length; i++) {
 			final int index = i;
+			int row = i / PLACEHOLDER_BTNS_PER_ROW;
+			int col = i % PLACEHOLDER_BTNS_PER_ROW;
+			int btnX = fieldX + col * (placeholderBtnWidth + BTN_GAP);
+			int btnY = currentY + row * (PLACEHOLDER_BTN_HEIGHT + 2);
+			
 			Button typeBtn = Button.builder(
 					Component.translatable(TYPE_KEYS[i]),
 					btn -> appendPlaceholder(index)
-			).bounds(startX + i * (btnWidth + gap), typeY, btnWidth, 20).build();
+			).bounds(btnX, btnY, placeholderBtnWidth, PLACEHOLDER_BTN_HEIGHT).build();
 			this.addRenderableWidget(typeBtn);
 		}
 
@@ -127,6 +158,9 @@ public class AddCommandScreen extends Screen {
 			return Component.translatable("screen.command-gui.category.default");
 		}
 		CommandConfig.Category cat = categories.get(selectedCategoryIndex);
+		if (cat.getDisplayName() != null) {
+			return Component.literal(cat.getDisplayName());
+		}
 		return Component.translatable(cat.nameKey);
 	}
 
@@ -172,14 +206,10 @@ public class AddCommandScreen extends Screen {
 		}
 		
 		if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-			if (commandField.isFocused() && !commandField.getValue().trim().isEmpty()) {
+			String name = nameField.getValue().trim();
+			String command = commandField.getValue().trim();
+			if (!name.isEmpty() && !command.isEmpty()) {
 				saveAndClose();
-				return true;
-			} else if (nameField.isFocused() && !nameField.getValue().trim().isEmpty()) {
-				this.setFocused(descriptionField);
-				return true;
-			} else if (descriptionField.isFocused()) {
-				this.setFocused(commandField);
 				return true;
 			}
 			return true;
@@ -214,27 +244,38 @@ public class AddCommandScreen extends Screen {
 		super.render(guiGraphics, mouseX, mouseY, partialTick);
 		
 		int centerX = this.width / 2;
-		int centerY = this.height / 2;
+		int centerY = this.height / 2 + Y_OFFSET;
+		int labelX = centerX - CONTENT_WIDTH / 2 - 4;
 		
-		guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 110, 0xFFFFFFFF);
+		guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 55, 0xFFFFFFFF);
 		
+		// Labels on the left side of input fields
+		int currentY = centerY - 40;
 		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.name"),
-				centerX - 100, centerY - 92, 0xFFAAAAAA);
+				labelX - this.font.width(Component.translatable("screen.command-gui.name")), currentY + 4, 0xFFAAAAAA);
 		
+		currentY += ROW_GAP;
 		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.description"),
-				centerX - 100, centerY - 52, 0xFFAAAAAA);
+				labelX - this.font.width(Component.translatable("screen.command-gui.description")), currentY + 4, 0xFFAAAAAA);
 		
-		int typeY = categories.size() > 1 ? centerY + 30 : centerY + 10;
+		if (categories.size() > 1) {
+			currentY += ROW_GAP;
+			guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.category"),
+					labelX - this.font.width(Component.translatable("screen.command-gui.category")), currentY + 4, 0xFFAAAAAA);
+		}
+		
+		currentY += ROW_GAP + 4;
 		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.placeholder_label"),
-				centerX - 100, typeY - 12, 0xFFAAAAAA);
+				labelX - this.font.width(Component.translatable("screen.command-gui.placeholder_label")), currentY + 4, 0xFFAAAAAA);
 		
 		guiGraphics.fill(2, this.height - 14, this.width - 2, this.height - 2, 0x80000000);
 		guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.command"),
 				4, this.height - 24, 0xFFAAAAAA);
 		
+		int rows = (TYPE_KEYS.length + PLACEHOLDER_BTNS_PER_ROW - 1) / PLACEHOLDER_BTNS_PER_ROW;
 		guiGraphics.drawCenteredString(this.font, 
 				Component.translatable("screen.command-gui.enter_to_save"),
-				centerX, typeY + 30, 0xFF888888);
+				centerX, currentY + rows * (PLACEHOLDER_BTN_HEIGHT + 2) + 8, 0xFF888888);
 		
 		this.commandSuggestions.render(guiGraphics, mouseX, mouseY);
 	}

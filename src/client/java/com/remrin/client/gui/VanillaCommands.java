@@ -26,13 +26,15 @@ public class VanillaCommands {
 	public static class VanillaCommand {
 		public final String nameKey;
 		public final String command;
+		public final String description;
 		public final Integer minValue;
 		public final Integer maxValue;
 		public final int[] quickValues;
 		
-		public VanillaCommand(String nameKey, String command, Integer minValue, Integer maxValue, int[] quickValues) {
+		public VanillaCommand(String nameKey, String command, String description, Integer minValue, Integer maxValue, int[] quickValues) {
 			this.nameKey = nameKey;
 			this.command = command;
+			this.description = description;
 			this.minValue = minValue;
 			this.maxValue = maxValue;
 			this.quickValues = quickValues;
@@ -40,6 +42,13 @@ public class VanillaCommands {
 		
 		public Component getName() {
 			return Component.translatable(nameKey);
+		}
+		
+		public Component getDescription() {
+			if (description != null && !description.isEmpty()) {
+				return Component.translatable(description);
+			}
+			return null;
 		}
 	}
 	
@@ -54,7 +63,7 @@ public class VanillaCommands {
 		for (PresetConfig.CommandGroup pg : preset.groups) {
 			CommandGroup group = new CommandGroup(pg.nameKey);
 			for (PresetConfig.PresetCommand pc : pg.commands) {
-				group.add(new VanillaCommand(pc.nameKey, pc.command, pc.minValue, pc.maxValue, pc.quickValues));
+				group.add(new VanillaCommand(pc.nameKey, pc.command, pc.description, pc.minValue, pc.maxValue, pc.quickValues));
 			}
 			groups.add(group);
 		}

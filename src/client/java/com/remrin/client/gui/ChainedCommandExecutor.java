@@ -231,14 +231,19 @@ public class ChainedCommandExecutor {
 	private void executeCommand() {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc != null && mc.player != null) {
-			if (parent != null) {
-				parent.onClose();
-			}
 			String command = currentCommand;
 			if (command.startsWith("/")) {
 				mc.player.connection.sendCommand(command.substring(1));
 			} else {
 				mc.player.connection.sendChat(command);
+			}
+			
+			if (!CommandGUIScreen.shouldKeepOpen()) {
+				if (parent != null) {
+					parent.onClose();
+				}
+			} else {
+				mc.setScreen(parent);
 			}
 		}
 	}
@@ -265,13 +270,18 @@ public class ChainedCommandExecutor {
 		} else {
 			Minecraft mc = Minecraft.getInstance();
 			if (mc != null && mc.player != null) {
-				if (parent != null) {
-					parent.onClose();
-				}
 				if (command.startsWith("/")) {
 					mc.player.connection.sendCommand(command.substring(1));
 				} else {
 					mc.player.connection.sendChat(command);
+				}
+				
+				if (!CommandGUIScreen.shouldKeepOpen()) {
+					if (parent != null) {
+						parent.onClose();
+					}
+				} else {
+					mc.setScreen(parent);
 				}
 			}
 		}
