@@ -7,6 +7,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.Level;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
@@ -257,16 +258,17 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
 			yawField.setValue(String.format("%.1f", yaw));
 			pitchField.setValue(String.format("%.1f", pitch));
 
-			// Auto-detect dimension
-			String dimKey = mc.player.level().dimension().location().toString();
-			for (int i = 0; i < DIMENSIONS.length; i++) {
-				if (DIMENSIONS[i].equals(dimKey)) {
-					dimensionIndex = i;
-					if (dimensionButton != null) {
-						dimensionButton.setMessage(getDimensionLabel());
-					}
-					break;
-				}
+			// Auto-detect dimension by comparing against known Level constants
+			net.minecraft.resources.ResourceKey<Level> dim = mc.player.level().dimension();
+			if (dim.equals(Level.NETHER)) {
+				dimensionIndex = 1;
+			} else if (dim.equals(Level.END)) {
+				dimensionIndex = 2;
+			} else {
+				dimensionIndex = 0; // default to overworld
+			}
+			if (dimensionButton != null) {
+				dimensionButton.setMessage(getDimensionLabel());
 			}
 
 			// Auto-detect gamemode
