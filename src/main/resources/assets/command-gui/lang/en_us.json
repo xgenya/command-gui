@@ -279,5 +279,20 @@
 	"screen.command-gui.carpet.track.villager_iron_golem.desc": "Track iron golem spawn conditions",
 	"screen.command-gui.carpet.script": "Script",
 	"screen.command-gui.carpet.script.list": "List Apps",
-	"screen.command-gui.carpet.script.list.desc": "List all loaded Scarpet apps"
+	"screen.command-gui.carpet.script.list.desc": "List all loaded Scarpet apps",
+
+	"screen.command-gui.add_fakeplayer_cmd": "Add Fake Player Command",
+	"screen.command-gui.add_fakeplayer_title": "Add Fake Player Command",
+	"screen.command-gui.fakeplayer.playername": "Player Name:",
+	"screen.command-gui.fakeplayer.playername_hint": "Enter fake player name...",
+	"screen.command-gui.fakeplayer.spawn_at": "Spawn At:",
+	"screen.command-gui.fakeplayer.dimension": "Dimension",
+	"screen.command-gui.fakeplayer.gamemode": "Gamemode",
+	"screen.command-gui.fakeplayer.action_label": "Action",
+	"screen.command-gui.fakeplayer.action.none": "None",
+	"screen.command-gui.fakeplayer.config": "Config:",
+	"screen.command-gui.fakeplayer.config_hint": "Optional config command...",
+	"screen.command-gui.fakeplayer.dim.overworld": "Overworld",
+	"screen.command-gui.fakeplayer.dim.nether": "Nether",
+	"screen.command-gui.fakeplayer.dim.end": "The End"
 }

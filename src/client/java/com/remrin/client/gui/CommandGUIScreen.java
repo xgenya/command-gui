@@ -346,7 +346,12 @@ public class CommandGUIScreen extends Screen {
 					String editName = contextMenuName;
 					CommandConfig.CommandEntry editEntry = contextMenuEntry;
 					clearContextMenu();
-					this.minecraft.setScreen(new EditCommandScreen(this, editName, editEntry));
+					if (isFakePlayerCommand(editEntry)) {
+						String categoryId = CommandConfig.findCommandCategory(editName);
+						this.minecraft.setScreen(new AddFakePlayerCommandScreen(this, categoryId, editName, editEntry));
+					} else {
+						this.minecraft.setScreen(new EditCommandScreen(this, editName, editEntry));
+					}
 					return true;
 				} else {
 					CommandConfig.removeCommand(contextMenuName);
@@ -389,6 +394,14 @@ public class CommandGUIScreen extends Screen {
 	private void clearContextMenu() {
 		contextMenuName = null;
 		contextMenuEntry = null;
+	}
+
+	private boolean isFakePlayerCommand(CommandConfig.CommandEntry entry) {
+		if (entry == null) return false;
+		java.util.List<String> commands = entry.getCommands();
+		if (commands.isEmpty()) return false;
+		String first = commands.get(0).trim().toLowerCase();
+		return first.startsWith("/player ") && first.contains(" spawn");
 	}
 	
 	private void executeCommand(String command) {

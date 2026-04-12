@@ -43,12 +43,19 @@ public class CustomCommandTab extends AbstractCommandTab {
 			for (Map.Entry<String, CommandConfig.CommandEntry> entry : category.commands.entrySet()) {
 				if (search.isEmpty() ||
 					entry.getKey().toLowerCase().contains(search) ||
-					entry.getValue().command.toLowerCase().contains(search) ||
-					entry.getValue().description.toLowerCase().contains(search)) {
+					entry.getValue().description.toLowerCase().contains(search) ||
+					matchesAnyCommand(entry.getValue(), search)) {
 					filteredCommands.add(new FilteredCommand(entry.getKey(), category.id, entry.getValue()));
 				}
 			}
 		}
+	}
+
+	private boolean matchesAnyCommand(CommandConfig.CommandEntry entry, String search) {
+		for (String cmd : entry.getCommands()) {
+			if (cmd.toLowerCase().contains(search)) return true;
+		}
+		return false;
 	}
 
 	@Override
