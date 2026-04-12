@@ -7,6 +7,8 @@ import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.network.chat.Component;
 
@@ -24,11 +26,14 @@ public class FakePlayerTab implements Tab {
 	private static final int ACTION_BUTTON_WIDTH = 80;
 	private static final int ACTION_BUTTON_HEIGHT = 20;
 	private static final int SEPARATOR_WIDTH = 1;
-	// Left accent bar width for selected items
-	private static final int ACCENT_WIDTH = 3;
-	// Padding between accent/face/name
-	private static final int FACE_PAD_LEFT = 5;  // accent(3) + gap(2)
+	private static final int FACE_PAD_LEFT = 4;
 	private static final int NAME_PAD_LEFT = 4;
+
+	// Vanilla sprites
+	private static final Identifier BUTTON_SPRITE = Identifier.withDefaultNamespace("widget/button");
+	private static final Identifier BUTTON_HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("widget/button_highlighted");
+	private static final Identifier TELEPORT_TO_PLAYER_SPRITE = Identifier.withDefaultNamespace("spectator/teleport_to_player");
+	private static final Identifier REMOVE_PLAYER_SPRITE = Identifier.withDefaultNamespace("player_list/remove_player");
 
 	private final CommandGUIScreen parent;
 	private final List<Button> playerButtons = new ArrayList<>();
@@ -350,16 +355,13 @@ public class FakePlayerTab implements Tab {
 					Component.translatable("screen.command-gui.fakeplayer.empty"),
 					playerListX + PLAYER_ITEM_WIDTH / 2,
 					area.top() + area.height() / 2 - 4,
-					0xFF666666);
+					0xFFAAAAAA);
 			return;
 		}
 
 		int startY = area.top();
 		int visibleRows = area.height() / PLAYER_ITEM_HEIGHT;
 		int endIndex = Math.min(scrollOffset + visibleRows + 1, displayList.size());
-
-		// Subtle list panel background
-		guiGraphics.fill(playerListX - 1, area.top(), playerListX + PLAYER_ITEM_WIDTH + 1, area.bottom(), 0xFF161616);
 
 		for (int i = scrollOffset; i < endIndex; i++) {
 			String name = displayList.get(i);
@@ -371,30 +373,18 @@ public class FakePlayerTab implements Tab {
 					&& mouseX >= playerListX && mouseX < playerListX + PLAYER_ITEM_WIDTH
 					&& mouseY >= y && mouseY < y + PLAYER_ITEM_HEIGHT;
 
-			int bgColor;
-			if (isSelected) {
-				bgColor = 0xFF193619;
-			} else if (isHovered) {
-				bgColor = 0xFF2C2C2C;
-			} else {
-				bgColor = (i % 2 == 0) ? 0xFF202020 : 0xFF1C1C1C;
-			}
-			guiGraphics.fill(playerListX, y, playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, bgColor);
+			Identifier sprite = (isSelected || isHovered) ? BUTTON_HIGHLIGHTED_SPRITE : BUTTON_SPRITE;
+			guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite,
+					playerListX, y, PLAYER_ITEM_WIDTH, PLAYER_ITEM_HEIGHT);
 
-			// Selected: left accent bar
+			// Subtle green tint for selected item
 			if (isSelected) {
-				guiGraphics.fill(playerListX, y, playerListX + ACCENT_WIDTH, y + PLAYER_ITEM_HEIGHT, 0xFF3ECC3E);
-			}
-
-			// Bottom divider
-			if (i < displayList.size() - 1 && y + PLAYER_ITEM_HEIGHT < area.bottom()) {
-				guiGraphics.fill(playerListX, y + PLAYER_ITEM_HEIGHT - 1,
-						playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, 0xFF2A2A2A);
+				guiGraphics.fill(playerListX, y, playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, 0x3300AA00);
 			}
 		}
 
-		// Vertical separator between list and actions
-		guiGraphics.fill(separatorX, area.top(), separatorX + SEPARATOR_WIDTH, area.bottom(), 0xFF404040);
+		// Separator between list and actions
+		guiGraphics.fill(separatorX, area.top(), separatorX + SEPARATOR_WIDTH, area.bottom(), 0xFF888888);
 	}
 	
 	public void renderScrollbar(GuiGraphics guiGraphics) {
@@ -442,23 +432,22 @@ public class FakePlayerTab implements Tab {
 			int faceY = y + faceVertOffset;
 
 			if (isPending) {
-				guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0x5055FF55);
-				guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + 1, 0xFF44BB44);
-				guiGraphics.fill(faceX, faceY + FACE_SIZE - 1, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF44BB44);
-				guiGraphics.fill(faceX, faceY, faceX + 1, faceY + FACE_SIZE, 0xFF44BB44);
-				guiGraphics.fill(faceX + FACE_SIZE - 1, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF44BB44);
-				guiGraphics.drawCenteredString(mc.font, "+", faceX + FACE_SIZE / 2, faceY + (FACE_SIZE - 9) / 2, 0xFF55FF55);
+				// Pending spawn: use vanilla "teleport to player" sprite as icon
+				guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
+						TELEPORT_TO_PLAYER_SPRITE, faceX, faceY, FACE_SIZE, FACE_SIZE);
 			} else {
 				PlayerInfo playerInfo = getPlayerInfo(playerName);
 				if (playerInfo != null) {
 					PlayerSkin skin = playerInfo.getSkin();
 					PlayerFaceRenderer.draw(guiGraphics, skin, faceX, faceY, FACE_SIZE);
 				} else {
-					guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF3A3A3A);
+					// Offline: grey placeholder box
+					guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF555555);
 				}
+				// Pending kill: vanilla "remove player" icon in top-right corner of face
 				if (task != null && task.type == TimedTaskManager.TaskType.KILL) {
-					guiGraphics.fill(faceX + FACE_SIZE - 4, faceY, faceX + FACE_SIZE, faceY + 4, 0xFFFF4444);
-					guiGraphics.fill(faceX + FACE_SIZE - 3, faceY + 1, faceX + FACE_SIZE - 1, faceY + 3, 0xFFFF8888);
+					guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
+							REMOVE_PLAYER_SPRITE, faceX + FACE_SIZE - 8, faceY, 8, 8);
 				}
 			}
 
@@ -466,15 +455,15 @@ public class FakePlayerTab implements Tab {
 			if (task != null) {
 				String timeStr = formatTime(task.getRemainingSeconds());
 				timerWidth = mc.font.width(timeStr) + 6;
-				int timeColor = task.type == TimedTaskManager.TaskType.SPAWN ? 0xFF44EE44 : 0xFFFF6644;
+				int timeColor = task.type == TimedTaskManager.TaskType.SPAWN ? 0xFF55FF55 : 0xFFFF5555;
 				guiGraphics.drawString(mc.font, timeStr,
 						playerListX + PLAYER_ITEM_WIDTH - timerWidth + 2,
 						y + textVertOffset, timeColor);
 			}
 
-			int maxNameWidth = playerListX + PLAYER_ITEM_WIDTH - nameX - timerWidth - 2;
+			int maxNameWidth = playerListX + PLAYER_ITEM_WIDTH - nameX - timerWidth - 4;
 			String displayName = mc.font.plainSubstrByWidth(playerName, maxNameWidth);
-			int nameColor = isPending ? 0xFF88EE88 : isSelected ? 0xFFEEFFEE : 0xFFCCCCCC;
+			int nameColor = isPending ? 0xFF55FF55 : isSelected ? 0xFFFFFFFF : 0xFFDDDDDD;
 			guiGraphics.drawString(mc.font, displayName, nameX, y + textVertOffset, nameColor);
 		}
 	}
