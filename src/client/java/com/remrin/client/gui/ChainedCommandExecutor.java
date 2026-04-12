@@ -270,6 +270,8 @@ public class ChainedCommandExecutor {
 				mc.player.connection.sendChat(command);
 			}
 			
+			onExecutionComplete();
+			
 			if (!CommandGUIScreen.shouldKeepOpen()) {
 				if (parent != null) {
 					parent.onClose();
@@ -278,6 +280,10 @@ public class ChainedCommandExecutor {
 				mc.setScreen(parent);
 			}
 		}
+	}
+
+	protected void onExecutionComplete() {
+		// Hook for subclasses to execute additional commands after the main command
 	}
 	
 	public static void sendCommand(String command) {
@@ -320,6 +326,49 @@ public class ChainedCommandExecutor {
 					mc.player.connection.sendChat(command);
 				}
 				
+				if (!CommandGUIScreen.shouldKeepOpen()) {
+					if (parent != null) {
+						parent.onClose();
+					}
+				} else {
+					mc.setScreen(parent);
+				}
+			}
+		}
+	}
+
+	public static void executeMulti(Screen parent, java.util.List<String> commands) {
+		executeMulti(parent, commands, Config.defaultConfig());
+	}
+
+	public static void executeMulti(Screen parent, java.util.List<String> commands, Config config) {
+		if (commands == null || commands.isEmpty()) return;
+		if (commands.size() == 1) {
+			execute(parent, commands.get(0), config);
+			return;
+		}
+		// Execute first command with placeholder support, then remaining commands directly
+		String first = commands.get(0);
+		java.util.List<String> rest = commands.subList(1, commands.size());
+		if (hasPlaceholders(first)) {
+			new ChainedCommandExecutor(parent, first, config) {
+				@Override
+				protected void onExecutionComplete() {
+					for (String cmd : rest) {
+						sendCommand(cmd);
+					}
+				}
+			}.start();
+		} else {
+			Minecraft mc = Minecraft.getInstance();
+			if (mc != null && mc.player != null) {
+				for (String cmd : commands) {
+					if (cmd.startsWith("/")) {
+						mc.player.connection.sendCommand(cmd.substring(1));
+					} else {
+						mc.player.connection.sendChat(cmd);
+					}
+				}
 				if (!CommandGUIScreen.shouldKeepOpen()) {
 					if (parent != null) {
 						parent.onClose();

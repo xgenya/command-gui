@@ -43,12 +43,19 @@ public class CustomCommandTab extends AbstractCommandTab {
 			for (Map.Entry<String, CommandConfig.CommandEntry> entry : category.commands.entrySet()) {
 				if (search.isEmpty() ||
 					entry.getKey().toLowerCase().contains(search) ||
-					entry.getValue().command.toLowerCase().contains(search) ||
-					entry.getValue().description.toLowerCase().contains(search)) {
+					entry.getValue().description.toLowerCase().contains(search) ||
+					matchesAnyCommand(entry.getValue(), search)) {
 					filteredCommands.add(new FilteredCommand(entry.getKey(), category.id, entry.getValue()));
 				}
 			}
 		}
+	}
+
+	private boolean matchesAnyCommand(CommandConfig.CommandEntry entry, String search) {
+		for (String cmd : entry.getCommands()) {
+			if (cmd.toLowerCase().contains(search)) return true;
+		}
+		return false;
 	}
 
 	@Override
@@ -94,9 +101,11 @@ public class CustomCommandTab extends AbstractCommandTab {
 				b -> handleCommand(cmd.entry())
 		).bounds(x, y, width, height).build();
 
-		String tooltipText = cmd.entry().command;
+		java.util.List<String> commands = cmd.entry().getCommands();
+		String commandText = String.join("\n", commands);
+		String tooltipText = commandText;
 		if (cmd.entry().description != null && !cmd.entry().description.isEmpty()) {
-			tooltipText = cmd.entry().description + "\n§7" + cmd.entry().command;
+			tooltipText = cmd.entry().description + "\n§7" + commandText;
 		}
 		btn.setTooltip(Tooltip.create(Component.literal(tooltipText)));
 		return btn;
@@ -119,7 +128,12 @@ public class CustomCommandTab extends AbstractCommandTab {
 	}
 
 	private void handleCommand(CommandConfig.CommandEntry entry) {
-		ChainedCommandExecutor.execute(parent, entry.command);
+		java.util.List<String> commands = entry.getCommands();
+		if (commands.size() > 1) {
+			ChainedCommandExecutor.executeMulti(parent, commands);
+		} else if (!commands.isEmpty()) {
+			ChainedCommandExecutor.execute(parent, commands.get(0));
+		}
 	}
 
 	public void refresh() {

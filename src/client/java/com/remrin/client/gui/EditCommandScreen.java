@@ -3,15 +3,19 @@ package com.remrin.client.gui;
 import com.remrin.client.config.CommandConfig;
 import net.minecraft.network.chat.Component;
 
+import java.util.List;
+
 public class EditCommandScreen extends BaseCommandEditorScreen {
 	private final String originalName;
 	private final String originalCommand;
+	private final List<String> originalCommands;
 	private final String originalDescription;
 
 	public EditCommandScreen(CommandGUIScreen parent, String name, CommandConfig.CommandEntry entry) {
 		super(Component.translatable("screen.command-gui.edit_title"), parent);
 		this.originalName = name;
-		this.originalCommand = entry.command;
+		this.originalCommands = entry.getCommands();
+		this.originalCommand = String.join("\n", originalCommands);
 		this.originalDescription = entry.description;
 	}
 

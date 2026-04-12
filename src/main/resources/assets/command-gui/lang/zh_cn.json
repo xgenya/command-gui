@@ -279,5 +279,20 @@
 	"screen.command-gui.carpet.track.villager_iron_golem.desc": "追踪铁傀儡生成条件",
 	"screen.command-gui.carpet.script": "脚本",
 	"screen.command-gui.carpet.script.list": "列出应用",
-	"screen.command-gui.carpet.script.list.desc": "列出所有已加载的Scarpet应用"
+	"screen.command-gui.carpet.script.list.desc": "列出所有已加载的Scarpet应用",
+
+	"screen.command-gui.add_fakeplayer_cmd": "添加假人指令",
+	"screen.command-gui.add_fakeplayer_title": "添加假人指令",
+	"screen.command-gui.fakeplayer.playername": "假人名称：",
+	"screen.command-gui.fakeplayer.playername_hint": "输入假人名称...",
+	"screen.command-gui.fakeplayer.spawn_at": "生成在：",
+	"screen.command-gui.fakeplayer.dimension": "维度",
+	"screen.command-gui.fakeplayer.gamemode": "游戏模式",
+	"screen.command-gui.fakeplayer.action_label": "假人动作",
+	"screen.command-gui.fakeplayer.action.none": "无",
+	"screen.command-gui.fakeplayer.config": "假人配置：",
+	"screen.command-gui.fakeplayer.config_hint": "可选配置指令...",
+	"screen.command-gui.fakeplayer.dim.overworld": "主世界",
+	"screen.command-gui.fakeplayer.dim.nether": "下界",
+	"screen.command-gui.fakeplayer.dim.end": "末地"
 }
