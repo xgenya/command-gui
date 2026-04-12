@@ -1,6 +1,7 @@
 package com.remrin.client.gui;
 
 import com.remrin.client.config.CommandConfig;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -14,7 +15,12 @@ import java.util.Objects;
 public class CustomCommandTab extends AbstractCommandTab {
 	private record FilteredCommand(String name, String categoryId, CommandConfig.CommandEntry entry) {}
 
+	private static final int ACTION_BTN_WIDTH = 14;
+	private static final int NUM_ACTION_BTNS = 3; // edit, delete, move
+	private static final int ACTION_BTNS_TOTAL = NUM_ACTION_BTNS * (ACTION_BTN_WIDTH + 1);
+
 	private final List<FilteredCommand> filteredCommands = new ArrayList<>();
+	private final List<Button> extraButtons = new ArrayList<>();
 	private String selectedCategoryId = null;
 
 	public CustomCommandTab(Screen parent) {
@@ -96,10 +102,12 @@ public class CustomCommandTab extends AbstractCommandTab {
 	@Override
 	protected Button buildCommandButton(int index, int x, int y, int width, int height) {
 		FilteredCommand cmd = filteredCommands.get(index);
+		// Make command button narrower to leave room for action buttons
+		int cmdBtnWidth = width - ACTION_BTNS_TOTAL;
 		Button btn = Button.builder(
 				Component.literal(cmd.name()),
 				b -> handleCommand(cmd.entry())
-		).bounds(x, y, width, height).build();
+		).bounds(x, y, cmdBtnWidth, height).build();
 
 		java.util.List<String> commands = cmd.entry().getCommands();
 		String commandText = String.join("\n", commands);
@@ -109,6 +117,113 @@ public class CustomCommandTab extends AbstractCommandTab {
 		}
 		btn.setTooltip(Tooltip.create(Component.literal(tooltipText)));
 		return btn;
+	}
+
+	@Override
+	protected void rebuildButtons() {
+		super.rebuildButtons();
+		// Build action buttons next to each command button
+		extraButtons.clear();
+		if (area == null) return;
+
+		int commandAreaLeft = getCommandAreaLeft();
+		int commandAreaWidth = getCommandAreaWidth();
+		int colWidth = commandAreaWidth / COLUMNS;
+		int y = area.top();
+		int maxY = area.bottom();
+
+		int startIndex = scrollOffset * COLUMNS;
+		int visibleRows = area.height() / ITEM_HEIGHT;
+		int maxItems = visibleRows * COLUMNS;
+		int count = getFilteredCommandCount();
+
+		for (int i = 0; i < Math.min(maxItems, count - startIndex); i++) {
+			int index = startIndex + i;
+			if (index >= count) break;
+
+			int col = i % COLUMNS;
+			int row = i / COLUMNS;
+			int btnX = commandAreaLeft + col * colWidth;
+			int btnY = y + row * ITEM_HEIGHT;
+			if (btnY + ITEM_HEIGHT > maxY) break;
+
+			int btnWidth = colWidth - 4;
+			int cmdBtnWidth = btnWidth - ACTION_BTNS_TOTAL;
+			int actionX = btnX + 2 + cmdBtnWidth + 1;
+
+			FilteredCommand cmd = filteredCommands.get(index);
+			final String cmdName = cmd.name();
+			final CommandConfig.CommandEntry cmdEntry = cmd.entry();
+
+			// Edit button
+			Button editBtn = Button.builder(
+					Component.literal("✏"),
+					b -> editCommand(cmdName, cmdEntry)
+			).bounds(actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2).build();
+			editBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.edit")));
+			extraButtons.add(editBtn);
+			actionX += ACTION_BTN_WIDTH + 1;
+
+			// Delete button
+			Button deleteBtn = Button.builder(
+					Component.literal("✗"),
+					b -> deleteCommand(cmdName)
+			).bounds(actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2).build();
+			deleteBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.delete")));
+			extraButtons.add(deleteBtn);
+			actionX += ACTION_BTN_WIDTH + 1;
+
+			// Move button
+			Button moveBtn = Button.builder(
+					Component.literal("⇄"),
+					b -> moveCommand(cmdName)
+			).bounds(actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2).build();
+			moveBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.move")));
+			extraButtons.add(moveBtn);
+		}
+	}
+
+	private void editCommand(String name, CommandConfig.CommandEntry entry) {
+		Minecraft mc = Minecraft.getInstance();
+		CommandGUIScreen parentScreen = (CommandGUIScreen) parent;
+		if (isFakePlayerCommand(entry)) {
+			String categoryId = CommandConfig.findCommandCategory(name);
+			mc.setScreen(new AddFakePlayerCommandScreen(parentScreen, categoryId, name, entry));
+		} else {
+			mc.setScreen(new EditCommandScreen(parentScreen, name, entry));
+		}
+	}
+
+	private void deleteCommand(String name) {
+		CommandConfig.removeCommand(name);
+		CommandGUIScreen parentScreen = (CommandGUIScreen) parent;
+		notifyCategoryChange(() -> {
+			buildFilteredCommands();
+			buildAllCategoryButtons();
+			rebuildVisibleCategoryButtons();
+			rebuildButtons();
+		});
+	}
+
+	private void moveCommand(String name) {
+		if (CommandConfig.getCategories().size() <= 1) return;
+		Minecraft mc = Minecraft.getInstance();
+		mc.setScreen(new MoveCategoryScreen((CommandGUIScreen) parent, name));
+	}
+
+	private boolean isFakePlayerCommand(CommandConfig.CommandEntry entry) {
+		if (entry == null) return false;
+		java.util.List<String> commands = entry.getCommands();
+		if (commands.isEmpty()) return false;
+		String first = commands.get(0).trim().toLowerCase();
+		return first.startsWith("/player ") && first.contains(" spawn");
+	}
+
+	@Override
+	public List<Button> getButtons() {
+		List<Button> all = new ArrayList<>(commandButtons);
+		all.addAll(extraButtons);
+		return all;
 	}
 
 	private void onCategoryButtonClick(String categoryId) {
