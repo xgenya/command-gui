@@ -303,6 +303,11 @@
 	"screen.command-gui.fakeplayer.add_config": "+ Add Command",
 	"screen.command-gui.fakeplayer.command_preview": "Command Preview",
 
+	"screen.command-gui.fakeplayer.pos.fill_current": "Use Current Position",
+	"screen.command-gui.fakeplayer.config_desc": "Config commands will run in order after the fake player spawns.",
+	"screen.command-gui.fakeplayer.killall.shift_hint": "Hold Shift + Click to remove all fake players",
+	"screen.command-gui.fakeplayer.killall.confirm": "⚠ Confirm remove all? (Shift+Click)",
+
 	"screen.command-gui.move": "Move",
 	"screen.command-gui.move_category_title": "Move to Category",
 

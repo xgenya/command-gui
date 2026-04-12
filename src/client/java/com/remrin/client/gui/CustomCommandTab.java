@@ -6,6 +6,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +17,14 @@ import java.util.Objects;
 public class CustomCommandTab extends AbstractCommandTab {
 	private record FilteredCommand(String name, String categoryId, CommandConfig.CommandEntry entry) {}
 
-	private static final int ACTION_BTN_WIDTH = 14;
+	private static final int ACTION_BTN_WIDTH = 18;
 	private static final int NUM_ACTION_BTNS = 3; // edit, delete, move
 	private static final int ACTION_BTNS_TOTAL = NUM_ACTION_BTNS * (ACTION_BTN_WIDTH + 1);
+
+	// MC item icons for action buttons
+	private static final ItemStack EDIT_ICON = new ItemStack(Items.WRITABLE_BOOK);
+	private static final ItemStack DELETE_ICON = new ItemStack(Items.LAVA_BUCKET);
+	private static final ItemStack MOVE_ICON = new ItemStack(Items.PURPLE_SHULKER_BOX);
 
 	private final List<FilteredCommand> filteredCommands = new ArrayList<>();
 	private final List<Button> extraButtons = new ArrayList<>();
@@ -156,29 +163,29 @@ public class CustomCommandTab extends AbstractCommandTab {
 			final CommandConfig.CommandEntry cmdEntry = cmd.entry();
 
 			// Edit button
-			Button editBtn = Button.builder(
-					Component.literal("✏"),
-					b -> editCommand(cmdName, cmdEntry)
-			).bounds(actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2).build();
-			editBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.edit")));
+			ItemIconButton editBtn = new ItemIconButton(
+					actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2,
+					EDIT_ICON,
+					Component.translatable("screen.command-gui.edit"),
+					b -> editCommand(cmdName, cmdEntry));
 			extraButtons.add(editBtn);
 			actionX += ACTION_BTN_WIDTH + 1;
 
 			// Delete button
-			Button deleteBtn = Button.builder(
-					Component.literal("✗"),
-					b -> deleteCommand(cmdName)
-			).bounds(actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2).build();
-			deleteBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.delete")));
+			ItemIconButton deleteBtn = new ItemIconButton(
+					actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2,
+					DELETE_ICON,
+					Component.translatable("screen.command-gui.delete"),
+					b -> deleteCommand(cmdName));
 			extraButtons.add(deleteBtn);
 			actionX += ACTION_BTN_WIDTH + 1;
 
 			// Move button
-			Button moveBtn = Button.builder(
-					Component.literal("⇄"),
-					b -> moveCommand(cmdName)
-			).bounds(actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2).build();
-			moveBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.move")));
+			ItemIconButton moveBtn = new ItemIconButton(
+					actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2,
+					MOVE_ICON,
+					Component.translatable("screen.command-gui.move"),
+					b -> moveCommand(cmdName));
 			extraButtons.add(moveBtn);
 		}
 	}
