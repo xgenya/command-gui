@@ -18,17 +18,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScreen> {
-private static final int FIELD_WIDTH = 170;
+private static final int MARGIN = 8;
+private static final int INNER_PAD = 6;
+private static final int FIELD_WIDTH = 150;
 private static final int FIELD_HEIGHT = 16;
 private static final int ROW_GAP = 20;
-private static final int COORD_GAP = 4;
-private static final int XYZ_FIELD_WIDTH = (FIELD_WIDTH - 2 * COORD_GAP) / 3; // 54
-private static final int YAW_PITCH_FIELD_WIDTH = (FIELD_WIDTH - COORD_GAP) / 2; // 83
-private static final int ACTION_BTN_WIDTH = 42;
+private static final int COL_GAP = 16;
+private static final int COORD_GAP = 8;
+private static final int ROT_GAP = 28;
+private static final int XYZ_FIELD_WIDTH = (FIELD_WIDTH - 2 * COORD_GAP) / 3; // 44
+private static final int YAW_PITCH_FIELD_WIDTH = (FIELD_WIDTH - ROT_GAP) / 2;  // 61
 private static final int ACTION_BTN_HEIGHT = 14;
 private static final int ACTION_BTN_GAP = 2;
 private static final int ACTIONS_PER_ROW = 4;
+private static final int ACTION_BTN_WIDTH = (FIELD_WIDTH - (ACTIONS_PER_ROW - 1) * ACTION_BTN_GAP) / ACTIONS_PER_ROW; // 36
 private static final int LABEL_COLOR = 0xFFAAAAAA;
+private static final int BORDER_COLOR = 0xFF555555;
+private static final int SELECTED_OVERLAY_COLOR = 0x6600CC00;
+private static final int MIN_LABEL_SPACE = 60; // minimum pixels left of left column for side labels
 
 private static final String[] DIMENSIONS = {
 "minecraft:overworld",
@@ -95,6 +102,11 @@ private final Set<Integer> selectedActions = new HashSet<>();
 private final List<String> configCommands = new ArrayList<>();
 private int lastSaveBtnY = -1;
 
+// Layout (computed in init)
+private int leftColX;
+private int rightColX;
+private int contentStartY;
+
 public AddFakePlayerCommandScreen(CommandGUIScreen parent, String initialCategoryId) {
 this(parent, initialCategoryId, null, null);
 }
@@ -111,104 +123,111 @@ this.editingEntry = editingEntry;
 protected void init() {
 super.init();
 
-int centerX = this.width / 2;
-int leftX = centerX - FIELD_WIDTH / 2;
-int currentY = 20;
+// Compute layout: two columns centered on screen
+int contentW = FIELD_WIDTH * 2 + COL_GAP;
+leftColX = Math.max(MARGIN + INNER_PAD + MIN_LABEL_SPACE, this.width / 2 - contentW / 2);
+rightColX = leftColX + FIELD_WIDTH + COL_GAP;
+contentStartY = MARGIN + INNER_PAD + 18;
 
-// === Name ===
-nameField = new EditBox(this.font, leftX, currentY, FIELD_WIDTH, FIELD_HEIGHT,
+int leftY = contentStartY;
+
+// === Left column: spawn settings ===
+
+// Name
+nameField = new EditBox(this.font, leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT,
 Component.translatable("screen.command-gui.name"));
 nameField.setMaxLength(50);
 nameField.setHint(Component.translatable("screen.command-gui.name_hint"));
 this.addRenderableWidget(nameField);
 
-// === Description ===
-currentY += ROW_GAP;
-descriptionField = new EditBox(this.font, leftX, currentY, FIELD_WIDTH, FIELD_HEIGHT,
+// Description
+leftY += ROW_GAP;
+descriptionField = new EditBox(this.font, leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT,
 Component.translatable("screen.command-gui.description"));
 descriptionField.setMaxLength(100);
 descriptionField.setHint(Component.translatable("screen.command-gui.description_hint"));
 this.addRenderableWidget(descriptionField);
 
-// === Fake Player Name ===
-currentY += ROW_GAP;
-fakePlayerNameField = new EditBox(this.font, leftX, currentY, FIELD_WIDTH, FIELD_HEIGHT,
+// Fake Player Name
+leftY += ROW_GAP;
+fakePlayerNameField = new EditBox(this.font, leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT,
 Component.translatable("screen.command-gui.fakeplayer.playername"));
 fakePlayerNameField.setMaxLength(20);
 fakePlayerNameField.setValue("Bot_1");
 fakePlayerNameField.setHint(Component.translatable("screen.command-gui.fakeplayer.playername_hint"));
 this.addRenderableWidget(fakePlayerNameField);
 
-// === Position section ===
-currentY += ROW_GAP + 4;
-
-// "Use Current Position" button — fills coord fields with player's current position
+// Fill current position button
+leftY += ROW_GAP + 4;
 fillCurrentPosButton = Button.builder(
 Component.translatable("screen.command-gui.fakeplayer.pos.fill_current"),
 btn -> fillCurrentPosition()
-).bounds(leftX, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
+).bounds(leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT).build();
 this.addRenderableWidget(fillCurrentPosButton);
 
 // XYZ row — three equal-width fields
-currentY += ROW_GAP;
-xField = new EditBox(this.font, leftX, currentY, XYZ_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("X"));
+leftY += ROW_GAP;
+xField = new EditBox(this.font, leftColX, leftY, XYZ_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("X"));
 xField.setMaxLength(12);
 xField.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
 this.addRenderableWidget(xField);
 
-yField = new EditBox(this.font, leftX + XYZ_FIELD_WIDTH + COORD_GAP, currentY, XYZ_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Y"));
+yField = new EditBox(this.font, leftColX + XYZ_FIELD_WIDTH + COORD_GAP, leftY, XYZ_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Y"));
 yField.setMaxLength(12);
 yField.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
 this.addRenderableWidget(yField);
 
-zField = new EditBox(this.font, leftX + (XYZ_FIELD_WIDTH + COORD_GAP) * 2, currentY, XYZ_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Z"));
+zField = new EditBox(this.font, leftColX + (XYZ_FIELD_WIDTH + COORD_GAP) * 2, leftY, XYZ_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Z"));
 zField.setMaxLength(12);
 zField.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
 this.addRenderableWidget(zField);
 
-// Yaw / Pitch row — two equal-width fields
-currentY += ROW_GAP;
-yawField = new EditBox(this.font, leftX, currentY, YAW_PITCH_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Yaw"));
+// Yaw / Pitch row — wider gap between fields to accommodate labels
+leftY += ROW_GAP;
+yawField = new EditBox(this.font, leftColX, leftY, YAW_PITCH_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Yaw"));
 yawField.setMaxLength(10);
 yawField.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
 this.addRenderableWidget(yawField);
 
-pitchField = new EditBox(this.font, leftX + YAW_PITCH_FIELD_WIDTH + COORD_GAP, currentY, YAW_PITCH_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Pitch"));
+pitchField = new EditBox(this.font, leftColX + YAW_PITCH_FIELD_WIDTH + ROT_GAP, leftY, YAW_PITCH_FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Pitch"));
 pitchField.setMaxLength(10);
 pitchField.setFilter(s -> s.isEmpty() || s.matches("-?\\d*\\.?\\d*"));
 this.addRenderableWidget(pitchField);
 
 // Dimension button
-currentY += ROW_GAP;
+leftY += ROW_GAP;
 dimensionButton = Button.builder(
 getDimensionLabel(),
 btn -> {
 dimensionIndex = (dimensionIndex + 1) % DIMENSIONS.length;
 dimensionButton.setMessage(getDimensionLabel());
 }
-).bounds(leftX, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
+).bounds(leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT).build();
 this.addRenderableWidget(dimensionButton);
 
 // Gamemode button
-currentY += ROW_GAP;
+leftY += ROW_GAP;
 gamemodeButton = Button.builder(
 getGamemodeLabel(),
 btn -> {
 gamemodeIndex = (gamemodeIndex + 1) % GAMEMODES.length;
 gamemodeButton.setMessage(getGamemodeLabel());
 }
-).bounds(leftX, currentY, FIELD_WIDTH, FIELD_HEIGHT).build();
+).bounds(leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT).build();
 this.addRenderableWidget(gamemodeButton);
 
-// === Actions section ===
-currentY += ROW_GAP + 4;
-buildActionButtons(leftX, currentY);
+// === Right column: actions then config ===
+
+// Leave space for "Actions" section label
+int rightY = contentStartY + 12;
+buildActionButtons(rightColX, rightY);
 
 int actionRows = (ACTIONS.length + ACTIONS_PER_ROW - 1) / ACTIONS_PER_ROW;
-currentY += actionRows * (ACTION_BTN_HEIGHT + ACTION_BTN_GAP) + 4;
+rightY += actionRows * (ACTION_BTN_HEIGHT + ACTION_BTN_GAP) + 8;
 
-// === Config commands section ===
-rebuildConfigWidgets(currentY);
+// Leave space for "Config" section label, then build config widgets
+rightY += 12;
+rebuildConfigWidgets(rightY);
 
 // Fill coord fields with current player position (defaults)
 fillCurrentPosition();
@@ -241,18 +260,9 @@ this.addRenderableWidget(actionBtn);
 }
 
 private int getConfigStartY() {
+// Config starts in the right column, after: content start + actions label (12) + action buttons + gap (8) + config label (12)
 int actionRows = (ACTIONS.length + ACTIONS_PER_ROW - 1) / ACTIONS_PER_ROW;
-int currentY = 20;           // nameField
-currentY += ROW_GAP;         // descriptionField
-currentY += ROW_GAP;         // fakePlayerNameField
-currentY += ROW_GAP + 4;     // fillCurrentPosButton
-currentY += ROW_GAP;         // XYZ fields
-currentY += ROW_GAP;         // Yaw/Pitch fields
-currentY += ROW_GAP;         // dimension button
-currentY += ROW_GAP;         // gamemode button
-currentY += ROW_GAP + 4;     // action buttons start
-currentY += actionRows * (ACTION_BTN_HEIGHT + ACTION_BTN_GAP) + 4;
-return currentY;
+return contentStartY + 12 + actionRows * (ACTION_BTN_HEIGHT + ACTION_BTN_GAP) + 8 + 12;
 }
 
 private void rebuildConfigWidgets(int startY) {
@@ -268,13 +278,12 @@ this.removeWidget(addConfigButton);
 configFields.clear();
 configRemoveButtons.clear();
 
-int centerX = this.width / 2;
-int leftX = centerX - FIELD_WIDTH / 2;
+int x = rightColX;
 int currentY = startY;
 
 for (int i = 0; i < configCommands.size(); i++) {
 final int idx = i;
-EditBox configField = new EditBox(this.font, leftX, currentY, FIELD_WIDTH - 18, FIELD_HEIGHT,
+EditBox configField = new EditBox(this.font, x, currentY, FIELD_WIDTH - 18, FIELD_HEIGHT,
 Component.translatable("screen.command-gui.fakeplayer.config"));
 configField.setMaxLength(256);
 configField.setValue(configCommands.get(i));
@@ -293,7 +302,7 @@ btn -> {
 configCommands.remove(idx);
 rebuildConfigWidgets(getConfigStartY());
 }
-).bounds(leftX + FIELD_WIDTH - 16, currentY, 16, FIELD_HEIGHT).build();
+).bounds(x + FIELD_WIDTH - 16, currentY, 16, FIELD_HEIGHT).build();
 configRemoveButtons.add(removeBtn);
 this.addRenderableWidget(removeBtn);
 
@@ -306,7 +315,7 @@ btn -> {
 configCommands.add("");
 rebuildConfigWidgets(getConfigStartY());
 }
-).bounds(leftX, currentY, 80, 14).build();
+).bounds(x, currentY, 80, 14).build();
 this.addRenderableWidget(addConfigButton);
 }
 
@@ -320,8 +329,10 @@ updateActionButtonColors();
 }
 
 private void updateActionButtonColors() {
+// Keep all action buttons active so selections can be toggled on/off.
+// Selected state is shown via a colored overlay drawn in render().
 for (int i = 0; i < actionButtons.size(); i++) {
-actionButtons.get(i).active = !selectedActions.contains(i);
+actionButtons.get(i).active = true;
 }
 }
 
@@ -536,84 +547,95 @@ this.minecraft.setScreen(parent);
 public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-int centerX = this.width / 2;
-int leftX = centerX - FIELD_WIDTH / 2;
-int labelX = leftX - 4;
-int currentY = 20;
+// === Outer border ===
+int bx = MARGIN, by = MARGIN, bw = this.width - 2 * MARGIN, bh = this.height - 2 * MARGIN;
+guiGraphics.fill(bx, by, bx + bw, by + 1, BORDER_COLOR);
+guiGraphics.fill(bx, by + bh - 1, bx + bw, by + bh, BORDER_COLOR);
+guiGraphics.fill(bx, by, bx + 1, by + bh, BORDER_COLOR);
+guiGraphics.fill(bx + bw - 1, by, bx + bw, by + bh, BORDER_COLOR);
 
 // Title
-guiGraphics.drawCenteredString(this.font, this.title, centerX, 6, 0xFFFFFFFF);
+guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, MARGIN + 6, 0xFFFFFFFF);
 
-// Name label
+// === Left column labels ===
+int labelX = leftColX - 4;
+int currentY = contentStartY;
+
 guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.name"),
 labelX - this.font.width(Component.translatable("screen.command-gui.name")), currentY + 4, LABEL_COLOR);
 
-// Description label
 currentY += ROW_GAP;
 guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.description"),
 labelX - this.font.width(Component.translatable("screen.command-gui.description")), currentY + 4, LABEL_COLOR);
 
-// Player name label
 currentY += ROW_GAP;
 guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.fakeplayer.playername"),
 labelX - this.font.width(Component.translatable("screen.command-gui.fakeplayer.playername")), currentY + 4, LABEL_COLOR);
 
-// Spawn At label (same row as fillCurrentPosButton)
 currentY += ROW_GAP + 4;
 guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.fakeplayer.spawn_at"),
 labelX - this.font.width(Component.translatable("screen.command-gui.fakeplayer.spawn_at")), currentY + 4, LABEL_COLOR);
 
-// XYZ axis labels
+// XYZ labels: X to the left, Y and Z inside the gaps between fields
 currentY += ROW_GAP;
-guiGraphics.drawString(this.font, "X", leftX - 9, currentY + 4, 0xFFFF5555);
-guiGraphics.drawString(this.font, "Y", leftX + XYZ_FIELD_WIDTH + COORD_GAP - 9, currentY + 4, 0xFF55FF55);
-guiGraphics.drawString(this.font, "Z", leftX + (XYZ_FIELD_WIDTH + COORD_GAP) * 2 - 9, currentY + 4, 0xFF5555FF);
+guiGraphics.drawString(this.font, "X",
+leftColX - 2 - this.font.width("X"), currentY + 4, 0xFFFF5555);
+guiGraphics.drawString(this.font, "Y",
+leftColX + XYZ_FIELD_WIDTH + 2, currentY + 4, 0xFF55FF55);
+guiGraphics.drawString(this.font, "Z",
+leftColX + (XYZ_FIELD_WIDTH + COORD_GAP) + XYZ_FIELD_WIDTH + 2, currentY + 4, 0xFF5555FF);
 
-// Yaw / Pitch labels
+// Yaw/Pitch labels: Yaw to the left, Pitch inside the wider ROT_GAP
 currentY += ROW_GAP;
 guiGraphics.drawString(this.font, "Yaw",
 labelX - this.font.width("Yaw"), currentY + 4, LABEL_COLOR);
 guiGraphics.drawString(this.font, "Pitch",
-leftX + YAW_PITCH_FIELD_WIDTH + COORD_GAP - this.font.width("Pitch") - 1, currentY + 4, LABEL_COLOR);
+leftColX + YAW_PITCH_FIELD_WIDTH + 2, currentY + 4, LABEL_COLOR);
 
-// Skip dimension + gamemode rows
-currentY += ROW_GAP; // dimension
-currentY += ROW_GAP; // gamemode
-
-// Actions label
-currentY += ROW_GAP + 4;
+// === Right column labels ===
+// "Actions" header just above the action buttons
 guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.fakeplayer.actions_label"),
-labelX - this.font.width(Component.translatable("screen.command-gui.fakeplayer.actions_label")), currentY + 2, LABEL_COLOR);
+rightColX, contentStartY + 2, LABEL_COLOR);
 
-// Config section label
+// "Config" header just above the config fields
 int configStartY = getConfigStartY();
 guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.fakeplayer.config_label"),
-labelX - this.font.width(Component.translatable("screen.command-gui.fakeplayer.config_label")), configStartY + 4, LABEL_COLOR);
+rightColX, configStartY - 10, LABEL_COLOR);
 
-// === Command preview ===
+// === Selected action overlays ===
+for (int i = 0; i < actionButtons.size(); i++) {
+if (selectedActions.contains(i)) {
+Button btn = actionButtons.get(i);
+guiGraphics.fill(btn.getX(), btn.getY(),
+btn.getX() + btn.getWidth(), btn.getY() + btn.getHeight(), SELECTED_OVERLAY_COLOR);
+}
+}
+
+// === Command preview (spanning full content width) ===
 List<String> commands = buildCommands();
 int configEndY = configStartY + configCommands.size() * ROW_GAP + 20;
 
-// Config section description (below add-config button)
 guiGraphics.drawString(this.font,
 Component.translatable("screen.command-gui.fakeplayer.config_desc"),
-leftX, configEndY + 2, 0xFF888888);
+rightColX, configEndY + 2, 0xFF888888);
 
+int contentRight = rightColX + FIELD_WIDTH;
 int previewLabelY = configEndY + 14;
 guiGraphics.drawCenteredString(this.font,
 Component.translatable("screen.command-gui.fakeplayer.command_preview"),
-centerX, previewLabelY, 0xFF888888);
+leftColX + (contentRight - leftColX) / 2, previewLabelY, 0xFF888888);
 
 int previewY = previewLabelY + 10;
+int previewMaxW = contentRight - leftColX - 4;
 for (int i = 0; i < commands.size(); i++) {
 String cmd = commands.get(i);
-String display = this.font.plainSubstrByWidth(cmd, this.width - 10);
-guiGraphics.drawString(this.font, display, 4, previewY + i * 10, 0xFF55FF55);
+String display = this.font.plainSubstrByWidth(cmd, previewMaxW);
+guiGraphics.drawString(this.font, display, leftColX + 2, previewY + i * 10, 0xFF55FF55);
 }
 
-// Save / Cancel buttons (positioned dynamically)
+// Save / Cancel buttons (positioned dynamically near bottom)
 int saveBtnY = previewY + commands.size() * 10 + 4;
-saveBtnY = Math.min(saveBtnY, this.height - 24);
+saveBtnY = Math.min(saveBtnY, this.height - MARGIN - INNER_PAD - 24);
 renderSaveCancel(saveBtnY);
 }
 
@@ -622,17 +644,18 @@ if (saveBtnY != lastSaveBtnY) {
 if (saveButton != null) this.removeWidget(saveButton);
 if (cancelButton != null) this.removeWidget(cancelButton);
 
-int centerX = this.width / 2;
+// Center save/cancel within the two-column content area
+int contentCenterX = leftColX + (FIELD_WIDTH * 2 + COL_GAP) / 2;
 saveButton = Button.builder(
 Component.translatable("screen.command-gui.save"),
 btn -> saveAndClose()
-).bounds(centerX - 102, saveBtnY, 100, 20).build();
+).bounds(contentCenterX - 102, saveBtnY, 100, 20).build();
 this.addRenderableWidget(saveButton);
 
 cancelButton = Button.builder(
 Component.translatable("screen.command-gui.cancel"),
 btn -> this.minecraft.setScreen(parent)
-).bounds(centerX + 2, saveBtnY, 100, 20).build();
+).bounds(contentCenterX + 2, saveBtnY, 100, 20).build();
 this.addRenderableWidget(cancelButton);
 
 lastSaveBtnY = saveBtnY;
