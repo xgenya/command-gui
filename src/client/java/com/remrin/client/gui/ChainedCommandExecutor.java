@@ -83,7 +83,7 @@ public class ChainedCommandExecutor {
 				default -> null;
 			};
 			if (type != null) {
-				// Avoid duplicate COORDS entries for {x}/{y}/{z} that belong to same input
+				// {x}, {y}, {z} all map to a single COORDS input; skip consecutive COORDS entries
 				if (type == PlaceholderType.COORDS && !pendingTypes.isEmpty()
 						&& pendingTypes.get(pendingTypes.size() - 1) == PlaceholderType.COORDS) {
 					continue;

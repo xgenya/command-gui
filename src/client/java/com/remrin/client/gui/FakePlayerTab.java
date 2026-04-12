@@ -177,7 +177,7 @@ public class FakePlayerTab implements Tab {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.getConnection() != null) {
 			for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-				if (info.getProfile().name().equals(name) && CommandHelper.isFakePlayer(name)) {
+				if (info.getProfile().name().equals(name) && CommandHelper.isFakePlayer(info)) {
 					return true;
 				}
 			}

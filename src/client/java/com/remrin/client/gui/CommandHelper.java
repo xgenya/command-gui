@@ -90,8 +90,13 @@ public final class CommandHelper {
 
 	/**
 	 * Detect if a PlayerInfo represents a Carpet fake player.
+	 * Excludes the local player even if they have 0 latency.
 	 */
 	public static boolean isFakePlayer(PlayerInfo playerInfo) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player != null && playerInfo.getProfile().id().equals(mc.player.getUUID())) {
+			return false;
+		}
 		return playerInfo.getLatency() == 0;
 	}
 
