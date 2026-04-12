@@ -131,8 +131,8 @@ public class CustomCommandTab extends AbstractCommandTab {
 		java.util.List<String> commands = entry.getCommands();
 		if (commands.size() > 1) {
 			ChainedCommandExecutor.executeMulti(parent, commands);
-		} else {
-			ChainedCommandExecutor.execute(parent, entry.command);
+		} else if (!commands.isEmpty()) {
+			ChainedCommandExecutor.execute(parent, commands.get(0));
 		}
 	}
 
