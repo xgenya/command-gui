@@ -303,6 +303,11 @@
 	"screen.command-gui.fakeplayer.add_config": "+ 添加指令",
 	"screen.command-gui.fakeplayer.command_preview": "命令预览",
 
+	"screen.command-gui.fakeplayer.pos.fill_current": "使用当前位置",
+	"screen.command-gui.fakeplayer.config_desc": "可配置指令将在假人生成后依次执行。",
+	"screen.command-gui.fakeplayer.killall.shift_hint": "按住 Shift 点击以移除全部假人",
+	"screen.command-gui.fakeplayer.killall.confirm": "⚠ 确认移除全部？(Shift+点击)",
+
 	"screen.command-gui.move": "移动",
 	"screen.command-gui.move_category_title": "移动到分类",
 

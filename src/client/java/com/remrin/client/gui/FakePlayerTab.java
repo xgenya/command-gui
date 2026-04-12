@@ -36,6 +36,8 @@ public class FakePlayerTab implements Tab {
 	private static final Identifier REMOVE_PLAYER_SPRITE = Identifier.withDefaultNamespace("player_list/remove_player");
 	private static final Identifier CLOCK_SPRITE = Identifier.parse("command-gui:icon/clock");
 
+	private boolean killAllWarningActive = false;
+
 	private final CommandGUIScreen parent;
 	private final List<Button> playerButtons = new ArrayList<>();
 	private final List<Button> actionButtons = new ArrayList<>();
@@ -228,12 +230,29 @@ public class FakePlayerTab implements Tab {
 			batchButtons.add(batchSpawnBtn);
 
 			Button killAllBtn = Button.builder(
-					Component.literal("x ").withStyle(ChatFormatting.RED)
-							.append(Component.translatable("screen.command-gui.fakeplayer.killall").withStyle(ChatFormatting.WHITE)),
-					b -> killAllFakePlayers()
+					killAllWarningActive
+							? Component.literal("\u26a0 ").withStyle(ChatFormatting.YELLOW)
+									.append(Component.translatable("screen.command-gui.fakeplayer.killall.confirm").withStyle(ChatFormatting.RED))
+							: Component.literal("x ").withStyle(ChatFormatting.RED)
+									.append(Component.translatable("screen.command-gui.fakeplayer.killall").withStyle(ChatFormatting.WHITE)),
+					b -> {
+						if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+							killAllWarningActive = false;
+							killAllFakePlayers();
+							fireBeforeRebuild();
+							rebuildActionButtons();
+							fireAfterRebuild();
+						} else {
+							killAllWarningActive = true;
+							fireBeforeRebuild();
+							rebuildActionButtons();
+							fireAfterRebuild();
+						}
+					}
 			).bounds(rightX + ACTION_BUTTON_WIDTH + ITEM_GAP, startY, ACTION_BUTTON_WIDTH, ACTION_BUTTON_HEIGHT).build();
+			killAllBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+					Component.translatable("screen.command-gui.fakeplayer.killall.shift_hint")));
 			batchButtons.add(killAllBtn);
-
 			Button timedSpawnBtn = Button.builder(
 					Component.literal("+ ").withStyle(ChatFormatting.YELLOW)
 							.append(Component.translatable("screen.command-gui.fakeplayer.timed.spawn.short").withStyle(ChatFormatting.WHITE)),

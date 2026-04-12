@@ -117,9 +117,18 @@ public class CommandGUIScreen extends Screen {
 
 		int closeBtnY = this.height - FOOTER_HEIGHT + 6;
 
-		// Search bar in footer row (smaller, left-aligned)
+		// Keep-open checkbox: far left
+		keepOpenCheckbox = Checkbox.builder(
+				Component.translatable("screen.command-gui.keep_open"),
+				this.font
+		).pos(PADDING, closeBtnY).selected(keepOpenAfterExecute).build();
+		this.addRenderableWidget(keepOpenCheckbox);
+
+		// Search bar + add buttons: centered
 		int searchWidth = 90;
-		searchField = new EditBox(this.font, PADDING, closeBtnY, searchWidth, 20,
+		int searchGroupWidth = searchWidth + 2 + 20 + 2 + 20; // 134
+		int searchGroupX = this.width / 2 - searchGroupWidth / 2;
+		searchField = new EditBox(this.font, searchGroupX, closeBtnY, searchWidth, 20,
 				Component.translatable("screen.command-gui.search_hint"));
 		searchField.setHint(Component.translatable("screen.command-gui.search_hint"));
 		searchField.setMaxLength(50);
@@ -130,34 +139,32 @@ public class CommandGUIScreen extends Screen {
 		addButton = Button.builder(
 				Component.translatable("screen.command-gui.add"),
 				button -> this.minecraft.setScreen(new AddCommandScreen(this, customTab.getSelectedCategoryId()))
-		).bounds(PADDING + searchWidth + 2, closeBtnY, 20, 20).build();
+		).bounds(searchGroupX + searchWidth + 2, closeBtnY, 20, 20).build();
 		this.addRenderableWidget(addButton);
 
 		addFakePlayerButton = Button.builder(
 				Component.literal("\uD83E\uDDD1"),
 				button -> this.minecraft.setScreen(new AddFakePlayerCommandScreen(this, customTab.getSelectedCategoryId()))
-		).bounds(PADDING + searchWidth + 24, closeBtnY, 20, 20).build();
+		).bounds(searchGroupX + searchWidth + 24, closeBtnY, 20, 20).build();
 		addFakePlayerButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
 				Component.translatable("screen.command-gui.add_fakeplayer_cmd")));
 		this.addRenderableWidget(addFakePlayerButton);
 
+		// Close button: far right
 		closeButton = Button.builder(
 				Component.translatable("screen.command-gui.close"),
 				button -> this.onClose()
-		).bounds(this.width / 2 + 30, closeBtnY, 60, 20).build();
+		).bounds(this.width - PADDING - 60, closeBtnY, 60, 20).build();
 		this.addRenderableWidget(closeButton);
 
-		keepOpenCheckbox = Checkbox.builder(
-				Component.translatable("screen.command-gui.keep_open"),
-				this.font
-		).pos(this.width / 2 - 120, closeBtnY).selected(keepOpenAfterExecute).build();
-		this.addRenderableWidget(keepOpenCheckbox);
-
+		// Settings button: hidden (functionality kept, entry hidden)
 		settingsButton = new SettingsButton(
 				this.width - PADDING - 20, closeBtnY,
 				20, 20,
 				btn -> this.minecraft.setScreen(new SettingsScreen(this))
 		);
+		settingsButton.visible = false;
+		settingsButton.active = false;
 		this.addRenderableWidget(settingsButton);
 
 		this.tabNavigationBar.selectTab(lastSelectedTabIndex, false);
@@ -225,8 +232,9 @@ public class CommandGUIScreen extends Screen {
 		closeButton.active = !isFakePlayerTab;
 		keepOpenCheckbox.visible = !isFakePlayerTab;
 		keepOpenCheckbox.active = !isFakePlayerTab;
-		settingsButton.visible = !isFakePlayerTab;
-		settingsButton.active = !isFakePlayerTab;
+		// Settings button is always hidden (functionality kept via SettingsScreen)
+		settingsButton.visible = false;
+		settingsButton.active = false;
 	}
 
 	private void onSearchChanged(String text) {
