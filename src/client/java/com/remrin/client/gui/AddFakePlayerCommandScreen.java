@@ -34,6 +34,8 @@ private static final int ACTIONS_PER_ROW = 4;
 private static final int ACTION_BTN_WIDTH = (FIELD_WIDTH - (ACTIONS_PER_ROW - 1) * ACTION_BTN_GAP) / ACTIONS_PER_ROW; // 36
 private static final int LABEL_COLOR = 0xFFAAAAAA;
 private static final int BORDER_COLOR = 0xFF555555;
+private static final int SELECTED_OVERLAY_COLOR = 0x6600CC00;
+private static final int MIN_LABEL_SPACE = 60; // minimum pixels left of left column for side labels
 
 private static final String[] DIMENSIONS = {
 "minecraft:overworld",
@@ -123,7 +125,7 @@ super.init();
 
 // Compute layout: two columns centered on screen
 int contentW = FIELD_WIDTH * 2 + COL_GAP;
-leftColX = Math.max(MARGIN + INNER_PAD + 60, this.width / 2 - contentW / 2);
+leftColX = Math.max(MARGIN + INNER_PAD + MIN_LABEL_SPACE, this.width / 2 - contentW / 2);
 rightColX = leftColX + FIELD_WIDTH + COL_GAP;
 contentStartY = MARGIN + INNER_PAD + 18;
 
@@ -605,7 +607,7 @@ for (int i = 0; i < actionButtons.size(); i++) {
 if (selectedActions.contains(i)) {
 Button btn = actionButtons.get(i);
 guiGraphics.fill(btn.getX(), btn.getY(),
-btn.getX() + btn.getWidth(), btn.getY() + btn.getHeight(), 0x6600CC00);
+btn.getX() + btn.getWidth(), btn.getY() + btn.getHeight(), SELECTED_OVERLAY_COLOR);
 }
 }
 
