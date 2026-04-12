@@ -236,7 +236,12 @@ public class FakePlayerTab implements Tab {
 							: Component.literal("x ").withStyle(ChatFormatting.RED)
 									.append(Component.translatable("screen.command-gui.fakeplayer.killall").withStyle(ChatFormatting.WHITE)),
 					b -> {
-						if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+						if (com.mojang.blaze3d.platform.InputConstants.isKeyDown(
+								Minecraft.getInstance().getWindow().getWindow(),
+								org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT)
+								|| com.mojang.blaze3d.platform.InputConstants.isKeyDown(
+								Minecraft.getInstance().getWindow().getWindow(),
+								org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT)) {
 							killAllWarningActive = false;
 							killAllFakePlayers();
 							fireBeforeRebuild();
