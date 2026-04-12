@@ -13,19 +13,33 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
 		"Kevin", "Leo", "Mike", "Nick", "Oscar", "Paul", "Quinn", "Ryan", "Steve", "Tom",
 		"Uma", "Victor", "Will", "Xavier", "York", "Zack"
 	};
-	
+	private static final int FIELD_WIDTH = 150;
+	private static final int LABEL_WIDTH = 80;
+	private static final int ROW_GAP = 28;
+
 	private EditBox prefixField;
 	private EditBox startNumField;
 	private EditBox countField;
-	
+
 	private String prefix = "Bot_";
 	private int startNum = 1;
 	private int count = 1;
 	private boolean useEnglishNames = false;
-	private Button typeButton;
+
+	// Computed in init(), shared with render()
+	private int layoutTopY;
 
 	public BatchSpawnScreen(Screen parent) {
 		super(Component.translatable("screen.command-gui.fakeplayer.batch.title"), parent);
+	}
+
+	/** Vertically center the content with a slight upward bias. */
+	private int computeLayoutTopY() {
+		// Rows: type + (prefix + start if numbered) + count = 2 or 4 rows
+		int rows = useEnglishNames ? 2 : 4;
+		// title(9) + gap(15) + rows*ROW_GAP + buttons(20) + gap(12) + preview(9)
+		int contentH = 9 + 15 + rows * ROW_GAP + 20 + 12 + 9;
+		return Math.max(20, (this.height - contentH) / 2 - 10);
 	}
 
 	@Override
@@ -33,58 +47,56 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
 		super.init();
 
 		int centerX = this.width / 2;
-		int centerY = this.height / 2;
-		int fieldWidth = 150;
-		int labelWidth = 80;
+		int maxCount = useEnglishNames ? ENGLISH_NAMES.length : 50;
+		count = Math.max(1, Math.min(count, maxCount));
 
-		int y = centerY - 75;
-		
-		typeButton = Button.builder(
-				Component.translatable(useEnglishNames ? 
-					"screen.command-gui.fakeplayer.batch.type.english" : 
-					"screen.command-gui.fakeplayer.batch.type.numbered"),
+		layoutTopY = computeLayoutTopY();
+		int y = layoutTopY + 24; // first row below title
+
+		// Type toggle — rebuilds entire layout so spacing adapts to visible rows
+		this.addRenderableWidget(Button.builder(
+				getTypeLabel(),
 				btn -> {
 					useEnglishNames = !useEnglishNames;
-					updateTypeButton();
-					updateFieldsVisibility();
+					rebuildWidgets();
 				}
-		).bounds(centerX - fieldWidth / 2 + labelWidth / 2, y, fieldWidth, 20).build();
-		this.addRenderableWidget(typeButton);
+		).bounds(centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, 20).build());
+		y += ROW_GAP;
 
-		y += 30;
-		prefixField = new EditBox(this.font, centerX - fieldWidth / 2 + labelWidth / 2, y, fieldWidth, 20,
-				Component.translatable("screen.command-gui.fakeplayer.batch.prefix"));
-		prefixField.setMaxLength(20);
-		prefixField.setValue(prefix);
-		prefixField.setResponder(s -> prefix = s);
-		this.addRenderableWidget(prefixField);
+		if (!useEnglishNames) {
+			prefixField = new EditBox(this.font, centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, 20,
+					Component.translatable("screen.command-gui.fakeplayer.batch.prefix"));
+			prefixField.setMaxLength(20);
+			prefixField.setValue(prefix);
+			prefixField.setResponder(s -> prefix = s);
+			this.addRenderableWidget(prefixField);
+			y += ROW_GAP;
 
-		y += 30;
-		startNumField = new EditBox(this.font, centerX - fieldWidth / 2 + labelWidth / 2, y, fieldWidth, 20,
-				Component.translatable("screen.command-gui.fakeplayer.batch.start"));
-		startNumField.setMaxLength(5);
-		startNumField.setValue(String.valueOf(startNum));
-		startNumField.setResponder(s -> {
-			try {
-				startNum = Integer.parseInt(s);
-			} catch (NumberFormatException ignored) {}
-		});
-		this.addRenderableWidget(startNumField);
+			startNumField = new EditBox(this.font, centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, 20,
+					Component.translatable("screen.command-gui.fakeplayer.batch.start"));
+			startNumField.setMaxLength(5);
+			startNumField.setValue(String.valueOf(startNum));
+			startNumField.setResponder(s -> {
+				try { startNum = Integer.parseInt(s); } catch (NumberFormatException ignored) {}
+			});
+			this.addRenderableWidget(startNumField);
+			y += ROW_GAP;
+		} else {
+			prefixField = null;
+			startNumField = null;
+		}
 
-		y += 30;
-		countField = new EditBox(this.font, centerX - fieldWidth / 2 + labelWidth / 2, y, fieldWidth, 20,
+		countField = new EditBox(this.font, centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, 20,
 				Component.translatable("screen.command-gui.fakeplayer.batch.count"));
 		countField.setMaxLength(3);
 		countField.setValue(String.valueOf(count));
 		countField.setResponder(s -> {
-			try {
-				int max = useEnglishNames ? ENGLISH_NAMES.length : 50;
-				count = Math.max(1, Math.min(max, Integer.parseInt(s)));
-			} catch (NumberFormatException ignored) {}
+			try { count = Math.max(1, Math.min(maxCount, Integer.parseInt(s))); }
+			catch (NumberFormatException ignored) {}
 		});
 		this.addRenderableWidget(countField);
+		y += 40;
 
-		y += 45;
 		this.addRenderableWidget(Button.builder(
 				Component.translatable("screen.command-gui.fakeplayer.batch.spawn"),
 				btn -> spawnBatch()
@@ -94,26 +106,12 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
 				Component.translatable("screen.command-gui.back"),
 				btn -> this.minecraft.setScreen(parent)
 		).bounds(centerX + 2, y, 100, 20).build());
-		
-		updateFieldsVisibility();
 	}
-	
-	private void updateTypeButton() {
-		typeButton.setMessage(Component.translatable(useEnglishNames ? 
-			"screen.command-gui.fakeplayer.batch.type.english" : 
-			"screen.command-gui.fakeplayer.batch.type.numbered"));
-	}
-	
-	private void updateFieldsVisibility() {
-		prefixField.visible = !useEnglishNames;
-		prefixField.active = !useEnglishNames;
-		startNumField.visible = !useEnglishNames;
-		startNumField.active = !useEnglishNames;
-		
-		if (useEnglishNames) {
-			count = Math.min(count, ENGLISH_NAMES.length);
-			countField.setValue(String.valueOf(count));
-		}
+
+	private Component getTypeLabel() {
+		return Component.translatable(useEnglishNames
+				? "screen.command-gui.fakeplayer.batch.type.english"
+				: "screen.command-gui.fakeplayer.batch.type.numbered");
 	}
 
 	private void spawnBatch() {
@@ -121,17 +119,27 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
 		if (mc.player == null) return;
 
 		if (useEnglishNames) {
-			for (int i = 0; i < count && i < ENGLISH_NAMES.length; i++) {
+			int n = Math.min(count, ENGLISH_NAMES.length);
+			for (int i = 0; i < n; i++) {
 				mc.player.connection.sendCommand("player " + ENGLISH_NAMES[i] + " spawn");
 			}
 		} else {
 			for (int i = 0; i < count; i++) {
-				String name = prefix + (startNum + i);
-				mc.player.connection.sendCommand("player " + name + " spawn");
+				mc.player.connection.sendCommand("player " + prefix + (startNum + i) + " spawn");
 			}
 		}
-		
 		this.minecraft.setScreen(parent);
+	}
+
+	private String buildPreview() {
+		if (useEnglishNames) {
+			int n = Math.min(count, ENGLISH_NAMES.length);
+			if (n <= 1) return ENGLISH_NAMES[0];
+			return ENGLISH_NAMES[0] + " ~ " + ENGLISH_NAMES[n - 1];
+		} else {
+			String first = prefix + startNum;
+			return count <= 1 ? first : first + " ~ " + prefix + (startNum + count - 1);
+		}
 	}
 
 	@Override
@@ -139,54 +147,36 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
 		super.render(guiGraphics, mouseX, mouseY, partialTick);
 
 		int centerX = this.width / 2;
-		int centerY = this.height / 2;
-		int labelWidth = 80;
-		int fieldWidth = 150;
-		int labelX = centerX - fieldWidth / 2 - labelWidth / 2 - 5;
+		int labelX = centerX - FIELD_WIDTH / 2 - LABEL_WIDTH / 2 - 5;
+		int y = layoutTopY;
 
-		guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 100, 0xFFFFFFFF);
+		guiGraphics.drawCenteredString(this.font, this.title, centerX, y, 0xFFFFFFFF);
+		y += 24;
 
-		int y = centerY - 75;
-		guiGraphics.drawString(this.font, 
+		guiGraphics.drawString(this.font,
 				Component.translatable("screen.command-gui.fakeplayer.batch.type"),
 				labelX, y + 6, 0xFFFFFFFF);
+		y += ROW_GAP;
 
 		if (!useEnglishNames) {
-			y += 30;
-			guiGraphics.drawString(this.font, 
+			guiGraphics.drawString(this.font,
 					Component.translatable("screen.command-gui.fakeplayer.batch.prefix"),
 					labelX, y + 6, 0xFFFFFFFF);
+			y += ROW_GAP;
 
-			y += 30;
-			guiGraphics.drawString(this.font, 
+			guiGraphics.drawString(this.font,
 					Component.translatable("screen.command-gui.fakeplayer.batch.start"),
 					labelX, y + 6, 0xFFFFFFFF);
-			
-			y += 30;
-		} else {
-			y += 90;
+			y += ROW_GAP;
 		}
-		
-		guiGraphics.drawString(this.font, 
+
+		guiGraphics.drawString(this.font,
 				Component.translatable("screen.command-gui.fakeplayer.batch.count"),
 				labelX, y + 6, 0xFFFFFFFF);
+		y += 40 + 20 + 12; // count field height + button height + gap
 
-		y += 75;
-		String preview;
-		if (useEnglishNames) {
-			if (count == 1) {
-				preview = ENGLISH_NAMES[0];
-			} else {
-				preview = ENGLISH_NAMES[0] + " ~ " + ENGLISH_NAMES[Math.min(count - 1, ENGLISH_NAMES.length - 1)];
-			}
-		} else {
-			preview = prefix + startNum;
-			if (count > 1) {
-				preview += " ~ " + prefix + (startNum + count - 1);
-			}
-		}
 		guiGraphics.drawCenteredString(this.font,
-				Component.translatable("screen.command-gui.fakeplayer.batch.preview", preview),
+				Component.translatable("screen.command-gui.fakeplayer.batch.preview", buildPreview()),
 				centerX, y, 0xFF888888);
 	}
 }

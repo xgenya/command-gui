@@ -461,7 +461,7 @@ public class FakePlayerTab implements Tab {
 			int timerWidth = 0;
 			if (task != null) {
 				String timeStr = formatTime(task.getRemainingSeconds());
-				int clockSize = 8;
+				int clockSize = 10;
 				int clockTimerGap = 2;
 				timerWidth = mc.font.width(timeStr) + clockSize + clockTimerGap + 6;
 				int timeColor = task.type == TimedTaskManager.TaskType.SPAWN ? 0xFF55FF55 : 0xFFFF5555;
