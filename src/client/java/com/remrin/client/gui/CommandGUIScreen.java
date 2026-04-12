@@ -1,6 +1,5 @@
 package com.remrin.client.gui;
 
-import com.remrin.client.config.CommandConfig;
 import com.remrin.client.config.PresetConfig;
 import com.remrin.client.config.SettingsConfig;
 import net.minecraft.client.gui.GuiGraphics;
@@ -321,21 +320,9 @@ public class CommandGUIScreen extends Screen {
 		return super.mouseClicked(mouseEvent, focused);
 	}
 	
-	private boolean isFakePlayerCommand(CommandConfig.CommandEntry entry) {
-		if (entry == null) return false;
-		java.util.List<String> commands = entry.getCommands();
-		if (commands.isEmpty()) return false;
-		String first = commands.get(0).trim().toLowerCase();
-		return first.startsWith("/player ") && first.contains(" spawn");
-	}
-	
 	private void executeCommand(String command) {
 		if (this.minecraft != null && this.minecraft.player != null) {
-			if (command.startsWith("/")) {
-				this.minecraft.player.connection.sendCommand(command.substring(1));
-			} else {
-				this.minecraft.player.connection.sendCommand(command);
-			}
+			CommandHelper.sendCommand(command);
 		}
 		if (!shouldKeepOpen()) {
 			this.minecraft.setScreen(null);

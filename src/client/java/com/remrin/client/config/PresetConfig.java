@@ -72,6 +72,9 @@ if (!location.getNamespace().equals("command-gui")) continue;
 String fileName = location.getPath().substring(location.getPath().lastIndexOf('/') + 1);
 Path targetPath = PRESETS_DIR.resolve(fileName);
 
+// Only copy default presets if they don't already exist (preserve user modifications)
+if (Files.exists(targetPath)) continue;
+
 try (InputStream is = entry.getValue().open();
  Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
 Preset preset = GSON.fromJson(reader, Preset.class);

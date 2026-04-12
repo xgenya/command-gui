@@ -219,11 +219,7 @@ public class CustomCommandTab extends AbstractCommandTab {
 	}
 
 	private boolean isFakePlayerCommand(CommandConfig.CommandEntry entry) {
-		if (entry == null) return false;
-		java.util.List<String> commands = entry.getCommands();
-		if (commands.isEmpty()) return false;
-		String first = commands.get(0).trim().toLowerCase();
-		return first.startsWith("/player ") && first.contains(" spawn");
+		return CommandHelper.isFakePlayerCommand(entry);
 	}
 
 	@Override

@@ -169,15 +169,15 @@ public class FakePlayerTab implements Tab {
 	}
 	
 	private boolean isPendingSpawn(String name) {
-		return TimedTaskManager.getTask(name) != null && 
-			   TimedTaskManager.getTask(name).type == TimedTaskManager.TaskType.SPAWN;
+		TimedTaskManager.TimedTask task = TimedTaskManager.getTask(name);
+		return task != null && task.type == TimedTaskManager.TaskType.SPAWN;
 	}
 	
 	private boolean isOnlineFakePlayer(String name) {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.getConnection() != null) {
 			for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-				if (info.getProfile().name().equals(name) && isFakePlayer(name)) {
+				if (info.getProfile().name().equals(name) && CommandHelper.isFakePlayer(name)) {
 					return true;
 				}
 			}
@@ -490,18 +490,7 @@ public class FakePlayerTab implements Tab {
 	}
 	
 	private String formatTime(int seconds) {
-		if (seconds >= 3600) {
-			int h = seconds / 3600;
-			int m = (seconds % 3600) / 60;
-			int s = seconds % 60;
-			return String.format("%d:%02d:%02d", h, m, s);
-		} else if (seconds >= 60) {
-			int m = seconds / 60;
-			int s = seconds % 60;
-			return String.format("%d:%02d", m, s);
-		} else {
-			return seconds + "s";
-		}
+		return CommandHelper.formatTime(seconds);
 	}
 	
 	private PlayerInfo getPlayerInfo(String name) {
@@ -517,32 +506,13 @@ public class FakePlayerTab implements Tab {
 	}
 	
 	private boolean isFakePlayer(String name) {
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.player != null && name.equals(mc.player.getName().getString())) {
-			return false;
-		}
-		
-		if (mc.getConnection() != null) {
-			for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-				if (info.getProfile().name().equals(name)) {
-					int ping = info.getLatency();
-					if (ping == 0) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
+		return CommandHelper.isFakePlayer(name);
 	}
 	
 	private void executeCommand(String command) {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.player != null) {
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendCommand(command);
-			}
+			CommandHelper.sendCommand(command);
 		}
 		if (!CommandGUIScreen.shouldKeepOpen()) {
 			mc.setScreen(null);

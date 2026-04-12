@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.remrin.CommandGUI;
+import com.remrin.client.gui.CommandHelper;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -83,20 +84,7 @@ public class CommandConfig {
 		}
 
 		public boolean hasPlaceholders() {
-			for (String cmd : getCommands()) {
-				if (cmd != null && (
-					cmd.contains("{player_all}") ||
-					cmd.contains("{player}") ||
-					cmd.contains("{player_fake}") ||
-					cmd.contains("{name}") ||
-					cmd.contains("{number}") ||
-					cmd.contains("{coords}") ||
-					cmd.contains("{x}")
-				)) {
-					return true;
-				}
-			}
-			return false;
+			return CommandHelper.hasPlaceholders(getCommands());
 		}
 	}
 
