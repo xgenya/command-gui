@@ -10,6 +10,8 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.world.entity.player.PlayerSkin;
 import net.minecraft.network.chat.Component;
 
+import net.minecraft.ChatFormatting;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -140,7 +142,8 @@ public class FakePlayerTab implements Tab {
 		int startY = area.top();
 		int visibleRows = area.height() / (PLAYER_ITEM_HEIGHT + ITEM_GAP);
 		int startIndex = scrollOffset;
-		int endIndex = Math.min(startIndex + visibleRows, displayList.size());
+		// +1 to include any partially-visible last row (face renders but button was missing)
+		int endIndex = Math.min(startIndex + visibleRows + 1, displayList.size());
 
 		for (int i = startIndex; i < endIndex; i++) {
 			String playerName = displayList.get(i);
@@ -206,23 +209,26 @@ public class FakePlayerTab implements Tab {
 		
 		if (selectedPlayer == null) {
 			Button batchSpawnBtn = Button.builder(
-					Component.translatable("screen.command-gui.fakeplayer.batch.title"),
+					Component.literal("+ ").withStyle(ChatFormatting.GREEN)
+							.append(Component.translatable("screen.command-gui.fakeplayer.batch.title").withStyle(ChatFormatting.WHITE)),
 					b -> openBatchSpawnScreen()
 			).bounds(rightX, startY, ACTION_BUTTON_WIDTH, ACTION_BUTTON_HEIGHT).build();
 			batchButtons.add(batchSpawnBtn);
-			
+
 			Button killAllBtn = Button.builder(
-					Component.translatable("screen.command-gui.fakeplayer.killall"),
+					Component.literal("x ").withStyle(ChatFormatting.RED)
+							.append(Component.translatable("screen.command-gui.fakeplayer.killall").withStyle(ChatFormatting.WHITE)),
 					b -> killAllFakePlayers()
 			).bounds(rightX + ACTION_BUTTON_WIDTH + ITEM_GAP, startY, ACTION_BUTTON_WIDTH, ACTION_BUTTON_HEIGHT).build();
 			batchButtons.add(killAllBtn);
-			
+
 			Button timedSpawnBtn = Button.builder(
-					Component.translatable("screen.command-gui.fakeplayer.timed.spawn.short"),
+					Component.literal("+ ").withStyle(ChatFormatting.YELLOW)
+							.append(Component.translatable("screen.command-gui.fakeplayer.timed.spawn.short").withStyle(ChatFormatting.WHITE)),
 					b -> openTimedSpawnScreen()
 			).bounds(rightX, startY + ACTION_BUTTON_HEIGHT + ITEM_GAP, ACTION_BUTTON_WIDTH * 2 + ITEM_GAP, ACTION_BUTTON_HEIGHT).build();
 			batchButtons.add(timedSpawnBtn);
-			
+
 			return;
 		}
 		
@@ -230,7 +236,8 @@ public class FakePlayerTab implements Tab {
 		
 		if (isPending) {
 			Button cancelBtn = Button.builder(
-					Component.translatable("screen.command-gui.fakeplayer.timed.cancel"),
+					Component.literal("x ").withStyle(ChatFormatting.RED)
+							.append(Component.translatable("screen.command-gui.fakeplayer.timed.cancel").withStyle(ChatFormatting.WHITE)),
 					b -> {
 						TimedTaskManager.removeTask(selectedPlayer);
 						selectedPlayer = null;
@@ -271,7 +278,8 @@ public class FakePlayerTab implements Tab {
 		
 		if (hasKillTask) {
 			Button cancelKillBtn = Button.builder(
-					Component.translatable("screen.command-gui.fakeplayer.timed.cancel"),
+					Component.literal("x ").withStyle(ChatFormatting.RED)
+							.append(Component.translatable("screen.command-gui.fakeplayer.timed.cancel").withStyle(ChatFormatting.WHITE)),
 					b -> {
 						TimedTaskManager.removeTask(selectedPlayer);
 						fireBeforeRebuild();
@@ -282,7 +290,8 @@ public class FakePlayerTab implements Tab {
 			actionButtons.add(cancelKillBtn);
 		} else {
 			Button timedKillBtn = Button.builder(
-					Component.translatable("screen.command-gui.fakeplayer.timed.kill.short"),
+					Component.literal("x ").withStyle(ChatFormatting.YELLOW)
+							.append(Component.translatable("screen.command-gui.fakeplayer.timed.kill.short").withStyle(ChatFormatting.WHITE)),
 					b -> openTimedKillScreen(selectedPlayer)
 			).bounds(rightX, timedKillY, ACTION_BUTTON_WIDTH * 2 + ITEM_GAP, ACTION_BUTTON_HEIGHT).build();
 			actionButtons.add(timedKillBtn);
@@ -379,8 +388,14 @@ public class FakePlayerTab implements Tab {
 					int faceY = y + (PLAYER_ITEM_HEIGHT - FACE_SIZE) / 2;
 					PlayerFaceRenderer.draw(guiGraphics, skin, faceX, faceY, FACE_SIZE);
 				}
+				// Small red indicator in corner when a kill task is pending
+				if (task != null && task.type == TimedTaskManager.TaskType.KILL) {
+					guiGraphics.fill(playerListX + 14, y + 2, playerListX + 18, y + 6, 0xCCFF3333);
+				}
 			} else {
-				guiGraphics.drawString(mc.font, "+", playerListX + 6, y + 6, 0xFF55FF55);
+				// Pending spawn: green box icon with "+" symbol
+				guiGraphics.fill(playerListX + 2, y + 2, playerListX + 18, y + 18, 0x4455FF55);
+				guiGraphics.drawCenteredString(mc.font, "+", playerListX + 10, y + 5, 0xFF55FF55);
 			}
 			
 			if (task != null) {
