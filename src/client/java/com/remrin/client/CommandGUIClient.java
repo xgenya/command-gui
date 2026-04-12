@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.remrin.client.config.CommandConfig;
 import com.remrin.client.config.PresetConfig;
 import com.remrin.client.config.SettingsConfig;
+import com.remrin.client.gui.ChainedCommandExecutor;
 import com.remrin.client.gui.CommandGUIScreen;
 import com.remrin.client.gui.TimedTaskManager;
 import net.fabricmc.api.ClientModInitializer;
@@ -58,6 +59,7 @@ public class CommandGUIClient implements ClientModInitializer {
 			}
 			
 			TimedTaskManager.tick();
+			ChainedCommandExecutor.tickDelayed();
 		});
 	}
 }

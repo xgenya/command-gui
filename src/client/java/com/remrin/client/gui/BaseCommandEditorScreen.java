@@ -9,6 +9,9 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class BaseCommandEditorScreen extends BaseParentedScreen<CommandGUIScreen> {
     protected static final String[] TYPE_KEYS = {
         "screen.command-gui.type.player_all_full",
@@ -43,6 +46,9 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
     protected EditBox descriptionField;
     protected EditBox commandField;
     protected CommandSuggestions commandSuggestions;
+    protected final List<String> commandList = new ArrayList<>();
+    private final List<Button> commandRemoveButtons = new ArrayList<>();
+    private Button addToListButton;
 
     protected BaseCommandEditorScreen(Component title, CommandGUIScreen parent) {
         super(title, parent);
@@ -93,6 +99,14 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
     /** Called after fields are restored; subclass should restore extra state. */
     protected void onAfterResize() {}
 
+    /**
+     * Get the initial list of commands for editing (multi-command entries).
+     * Override in subclass if editing an existing multi-command entry.
+     */
+    protected List<String> getInitialCommandList() {
+        return List.of();
+    }
+
     @Override
     protected void init() {
         super.init();
@@ -137,7 +151,17 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
             this.addRenderableWidget(typeBtn);
         }
 
-        commandField = new EditBox(this.font, 4, this.height - 12, this.width - 8, 12,
+        // Initialize command list from initial data
+        if (commandList.isEmpty()) {
+            List<String> initial = getInitialCommandList();
+            if (initial != null && !initial.isEmpty()) {
+                commandList.addAll(initial);
+            }
+        }
+
+        // Bottom: command input + "add to list" button
+        int addBtnWidth = 50;
+        commandField = new EditBox(this.font, 4, this.height - 12, this.width - 8 - addBtnWidth - 4, 12,
                 Component.translatable("screen.command-gui.command"));
         commandField.setMaxLength(256);
         commandField.setValue(getInitialCommand());
@@ -148,11 +172,70 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         }
         this.addRenderableWidget(commandField);
 
+        addToListButton = Button.builder(
+                Component.translatable("screen.command-gui.add_command_line"),
+                btn -> addCurrentCommandToList()
+        ).bounds(this.width - addBtnWidth - 4, this.height - 16, addBtnWidth, 14).build();
+        this.addRenderableWidget(addToListButton);
+
         this.commandSuggestions = new CommandSuggestions(this.minecraft, this, commandField,
                 this.font, false, false, 1, 10, true, -805306368);
         this.commandSuggestions.setAllowSuggestions(true);
         this.commandSuggestions.updateCommandInfo();
         commandField.setResponder(text -> this.commandSuggestions.updateCommandInfo());
+
+        rebuildCommandListButtons();
+    }
+
+    private void addCurrentCommandToList() {
+        String cmd = commandField.getValue().trim();
+        if (!cmd.isEmpty()) {
+            commandList.add(cmd);
+            commandField.setValue("");
+            rebuildCommandListButtons();
+        }
+    }
+
+    private void rebuildCommandListButtons() {
+        for (Button btn : commandRemoveButtons) {
+            this.removeWidget(btn);
+        }
+        commandRemoveButtons.clear();
+
+        int centerX = this.width / 2;
+        int fieldX = centerX - CONTENT_WIDTH / 2 + LABEL_WIDTH;
+        int rows = (TYPE_KEYS.length + PLACEHOLDER_BTNS_PER_ROW - 1) / PLACEHOLDER_BTNS_PER_ROW;
+        int centerY = this.height / 2 + Y_OFFSET;
+        int startY = getFieldStartY(centerY);
+
+        // Skip through fields to find placeholder area end
+        int placeholderStartY = startY;
+        placeholderStartY += ROW_GAP; // description
+        // Account for extra row
+        if (hasExtraRow()) {
+            placeholderStartY += ROW_GAP;
+        }
+        placeholderStartY += ROW_GAP + 4; // placeholder section
+        int placeholderEndY = placeholderStartY + rows * (PLACEHOLDER_BTN_HEIGHT + 2) + 16;
+
+        int listY = placeholderEndY + 2;
+        for (int i = 0; i < commandList.size(); i++) {
+            final int idx = i;
+            Button removeBtn = Button.builder(
+                    Component.translatable("screen.command-gui.remove_command"),
+                    btn -> {
+                        commandList.remove(idx);
+                        rebuildCommandListButtons();
+                    }
+            ).bounds(fieldX + CONTENT_WIDTH - 14, listY + i * 12, 14, 12).build();
+            commandRemoveButtons.add(removeBtn);
+            this.addRenderableWidget(removeBtn);
+        }
+    }
+
+    /** Override in subclass if it adds an extra row */
+    protected boolean hasExtraRow() {
+        return false;
     }
 
     protected void appendPlaceholder(int index) {
@@ -165,10 +248,22 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         this.setFocused(commandField);
     }
 
+    /**
+     * Get all commands: the list + any current text in the command field.
+     */
+    protected List<String> getAllCommands() {
+        List<String> all = new ArrayList<>(commandList);
+        String current = commandField.getValue().trim();
+        if (!current.isEmpty()) {
+            all.add(current);
+        }
+        return all;
+    }
+
     protected final void saveAndClose() {
         String newName = nameField.getValue().trim();
-        String newCommand = commandField.getValue().trim();
-        if (!newName.isEmpty() && !newCommand.isEmpty()) {
+        List<String> commands = getAllCommands();
+        if (!newName.isEmpty() && !commands.isEmpty()) {
             performSave();
             parent.refresh();
             this.minecraft.setScreen(parent);
@@ -180,13 +275,17 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         String name = this.nameField.getValue();
         String description = this.descriptionField.getValue();
         String command = this.commandField.getValue();
+        List<String> savedList = new ArrayList<>(this.commandList);
         onBeforeResize();
         super.resize(width, height);
         this.nameField.setValue(name);
         this.descriptionField.setValue(description);
         this.commandField.setValue(command);
+        this.commandList.clear();
+        this.commandList.addAll(savedList);
         onAfterResize();
         this.commandSuggestions.updateCommandInfo();
+        rebuildCommandListButtons();
     }
 
     @Override
@@ -203,8 +302,8 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
 
         if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
             String name = nameField.getValue().trim();
-            String command = commandField.getValue().trim();
-            if (!name.isEmpty() && !command.isEmpty()) {
+            List<String> commands = getAllCommands();
+            if (!name.isEmpty() && !commands.isEmpty()) {
                 saveAndClose();
             }
             return true;
@@ -241,6 +340,7 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         int centerX = this.width / 2;
         int centerY = this.height / 2 + Y_OFFSET;
         int labelX = centerX - CONTENT_WIDTH / 2 - 4;
+        int fieldX = centerX - CONTENT_WIDTH / 2 + LABEL_WIDTH;
 
         guiGraphics.drawCenteredString(this.font, this.title, centerX, getTitleY(centerY), 0xFFFFFFFF);
 
@@ -258,14 +358,38 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.placeholder_label"),
                 labelX - this.font.width(Component.translatable("screen.command-gui.placeholder_label")), currentY + 4, 0xFFAAAAAA);
 
+        // Placeholder description text
+        int rows = (TYPE_KEYS.length + PLACEHOLDER_BTNS_PER_ROW - 1) / PLACEHOLDER_BTNS_PER_ROW;
+        int afterPlaceholders = currentY + rows * (PLACEHOLDER_BTN_HEIGHT + 2) + 4;
+        Component placeholderDesc = Component.translatable("screen.command-gui.placeholder_desc");
+        int maxDescWidth = this.width - 20;
+        List<net.minecraft.util.FormattedCharSequence> descLines = this.font.split(placeholderDesc, maxDescWidth);
+        int descY = afterPlaceholders;
+        for (net.minecraft.util.FormattedCharSequence line : descLines) {
+            guiGraphics.drawString(this.font, line, 10, descY, 0xFF666666);
+            descY += 10;
+        }
+
+        // Command list label and items
+        if (!commandList.isEmpty()) {
+            descY += 2;
+            guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.commands_label"),
+                    labelX - this.font.width(Component.translatable("screen.command-gui.commands_label")), descY + 2, 0xFFAAAAAA);
+            for (int i = 0; i < commandList.size(); i++) {
+                String cmd = commandList.get(i);
+                String display = this.font.plainSubstrByWidth(cmd, CONTENT_WIDTH - 20);
+                guiGraphics.drawString(this.font, display, fieldX, descY + i * 12 + 2, 0xFF55FF55);
+            }
+        }
+
+        // Bottom command area
         guiGraphics.fill(2, this.height - 14, this.width - 2, this.height - 2, 0x80000000);
         guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.command"),
                 4, this.height - 24, 0xFFAAAAAA);
 
-        int rows = (TYPE_KEYS.length + PLACEHOLDER_BTNS_PER_ROW - 1) / PLACEHOLDER_BTNS_PER_ROW;
         guiGraphics.drawCenteredString(this.font,
                 Component.translatable("screen.command-gui.enter_to_save"),
-                centerX, currentY + rows * (PLACEHOLDER_BTN_HEIGHT + 2) + 8, 0xFF888888);
+                centerX, this.height - 34, 0xFF888888);
 
         this.commandSuggestions.render(guiGraphics, mouseX, mouseY);
     }

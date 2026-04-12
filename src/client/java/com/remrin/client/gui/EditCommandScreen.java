@@ -15,7 +15,9 @@ public class EditCommandScreen extends BaseCommandEditorScreen {
 		super(Component.translatable("screen.command-gui.edit_title"), parent);
 		this.originalName = name;
 		this.originalCommands = entry.getCommands();
-		this.originalCommand = String.join("\n", originalCommands);
+		// For the command field, use the last command or first if only one
+		this.originalCommand = originalCommands.isEmpty() ? "" :
+				(originalCommands.size() == 1 ? originalCommands.get(0) : "");
 		this.originalDescription = entry.description;
 	}
 
@@ -45,17 +47,35 @@ public class EditCommandScreen extends BaseCommandEditorScreen {
 	}
 
 	@Override
+	protected List<String> getInitialCommandList() {
+		// For multi-command entries, put all except the last in the list
+		// and the last one in the command field
+		if (originalCommands.size() > 1) {
+			return originalCommands;
+		}
+		return List.of();
+	}
+
+	@Override
 	protected void performSave() {
 		String newName = nameField.getValue().trim();
-		String newCommand = commandField.getValue().trim();
 		String newDescription = descriptionField.getValue().trim();
+		List<String> commands = getAllCommands();
 
 		if (!newName.equals(originalName)) {
 			String categoryId = CommandConfig.findCommandCategory(originalName);
 			CommandConfig.removeCommand(originalName);
-			CommandConfig.addCommand(categoryId != null ? categoryId : "default", newName, newCommand, newDescription);
+			if (commands.size() > 1) {
+				CommandConfig.addCommandMulti(categoryId != null ? categoryId : "default", newName, commands, newDescription);
+			} else if (!commands.isEmpty()) {
+				CommandConfig.addCommand(categoryId != null ? categoryId : "default", newName, commands.get(0), newDescription);
+			}
 		} else {
-			CommandConfig.updateCommand(newName, newCommand, newDescription);
+			if (commands.size() > 1) {
+				CommandConfig.updateCommandMulti(newName, commands, newDescription);
+			} else if (!commands.isEmpty()) {
+				CommandConfig.updateCommand(newName, commands.get(0), newDescription);
+			}
 		}
 	}
 }

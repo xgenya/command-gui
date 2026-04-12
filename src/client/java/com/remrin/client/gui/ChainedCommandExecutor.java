@@ -350,23 +350,29 @@ public class ChainedCommandExecutor {
 		// Execute first command with placeholder support, then remaining commands directly
 		String first = commands.get(0);
 		java.util.List<String> rest = commands.subList(1, commands.size());
+		boolean needsDelay = isFakePlayerSpawnCommand(first) && !rest.isEmpty();
 		if (hasPlaceholders(first)) {
 			new ChainedCommandExecutor(parent, first, config) {
 				@Override
 				protected void onExecutionComplete() {
-					for (String cmd : rest) {
-						sendCommand(cmd);
+					if (needsDelay) {
+						scheduleDelayed(new ArrayList<>(rest), 0);
+					} else {
+						for (String cmd : rest) {
+							sendCommand(cmd);
+						}
 					}
 				}
 			}.start();
 		} else {
 			Minecraft mc = Minecraft.getInstance();
 			if (mc != null && mc.player != null) {
-				for (String cmd : commands) {
-					if (cmd.startsWith("/")) {
-						mc.player.connection.sendCommand(cmd.substring(1));
-					} else {
-						mc.player.connection.sendChat(cmd);
+				sendCommand(first);
+				if (needsDelay) {
+					scheduleDelayed(new ArrayList<>(rest), 0);
+				} else {
+					for (String cmd : rest) {
+						sendCommand(cmd);
 					}
 				}
 				if (!CommandGUIScreen.shouldKeepOpen()) {
@@ -376,6 +382,59 @@ public class ChainedCommandExecutor {
 				} else {
 					mc.setScreen(parent);
 				}
+			}
+		}
+	}
+
+	/**
+	 * Detect if a command is a fake player spawn command (/player X spawn ...).
+	 * When spawn is followed by action commands, we need a delay to ensure
+	 * the fake player is fully spawned before executing actions.
+	 */
+	private static boolean isFakePlayerSpawnCommand(String command) {
+		String cmd = command.trim().toLowerCase();
+		if (cmd.startsWith("/")) cmd = cmd.substring(1);
+		return cmd.startsWith("player ") && cmd.contains(" spawn");
+	}
+
+	// --- Delayed command execution queue ---
+	private static final int SPAWN_DELAY_TICKS = 20; // 1 second delay after spawn
+	private static final List<DelayedBatch> delayedQueue = new ArrayList<>();
+
+	private static class DelayedBatch {
+		final List<String> commands;
+		int remainingTicks;
+
+		DelayedBatch(List<String> commands, int delayTicks) {
+			this.commands = commands;
+			this.remainingTicks = delayTicks;
+		}
+	}
+
+	/**
+	 * Schedule commands to execute after a delay (in ticks).
+	 * Used to ensure fake player spawn completes before running actions.
+	 */
+	private static void scheduleDelayed(List<String> commands, int extraDelay) {
+		delayedQueue.add(new DelayedBatch(commands, SPAWN_DELAY_TICKS + extraDelay));
+	}
+
+	/**
+	 * Called every client tick to process delayed command batches.
+	 * Must be registered in the client tick event handler.
+	 */
+	public static void tickDelayed() {
+		if (delayedQueue.isEmpty()) return;
+
+		java.util.Iterator<DelayedBatch> it = delayedQueue.iterator();
+		while (it.hasNext()) {
+			DelayedBatch batch = it.next();
+			batch.remainingTicks--;
+			if (batch.remainingTicks <= 0) {
+				for (String cmd : batch.commands) {
+					sendCommand(cmd);
+				}
+				it.remove();
 			}
 		}
 	}

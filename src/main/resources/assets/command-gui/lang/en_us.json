@@ -294,5 +294,20 @@
 	"screen.command-gui.fakeplayer.config_hint": "Optional config command...",
 	"screen.command-gui.fakeplayer.dim.overworld": "Overworld",
 	"screen.command-gui.fakeplayer.dim.nether": "Nether",
-	"screen.command-gui.fakeplayer.dim.end": "The End"
+	"screen.command-gui.fakeplayer.dim.end": "The End",
+
+	"screen.command-gui.fakeplayer.pos.current": "Current Pos",
+	"screen.command-gui.fakeplayer.pos.specified": "Custom Pos",
+	"screen.command-gui.fakeplayer.actions_label": "Actions:",
+	"screen.command-gui.fakeplayer.config_label": "Config Commands:",
+	"screen.command-gui.fakeplayer.add_config": "+ Add Command",
+	"screen.command-gui.fakeplayer.command_preview": "Command Preview",
+
+	"screen.command-gui.move": "Move",
+	"screen.command-gui.move_category_title": "Move to Category",
+
+	"screen.command-gui.placeholder_desc": "Placeholders open a GUI for quick input on execution. If the command is already finalized, no placeholder is needed.",
+	"screen.command-gui.commands_label": "Commands:",
+	"screen.command-gui.add_command_line": "Add to List",
+	"screen.command-gui.remove_command": "✗"
 }
