@@ -15,11 +15,20 @@ public class TimedTaskManager {
 		public final TaskType type;
 		public final String playerName;
 		public int remainingTicks;
-		
+		/** Optional spawn coordinates (null = spawn at current position) */
+		public final Double spawnX, spawnY, spawnZ;
+
 		public TimedTask(TaskType type, String playerName, int delayTicks) {
+			this(type, playerName, delayTicks, null, null, null);
+		}
+
+		public TimedTask(TaskType type, String playerName, int delayTicks, Double x, Double y, Double z) {
 			this.type = type;
 			this.playerName = playerName;
 			this.remainingTicks = delayTicks;
+			this.spawnX = x;
+			this.spawnY = y;
+			this.spawnZ = z;
 		}
 		
 		public int getRemainingSeconds() {
@@ -30,9 +39,14 @@ public class TimedTaskManager {
 	private static final List<TimedTask> pendingTasks = new ArrayList<>();
 	
 	public static void addSpawnTask(String playerName, int hours, int minutes, int seconds) {
+		addSpawnTask(playerName, hours, minutes, seconds, null, null, null);
+	}
+
+	public static void addSpawnTask(String playerName, int hours, int minutes, int seconds,
+									Double x, Double y, Double z) {
 		int totalTicks = (hours * 3600 + minutes * 60 + seconds) * 20;
 		if (totalTicks > 0) {
-			pendingTasks.add(new TimedTask(TaskType.SPAWN, playerName, totalTicks));
+			pendingTasks.add(new TimedTask(TaskType.SPAWN, playerName, totalTicks, x, y, z));
 		}
 	}
 	
@@ -82,7 +96,14 @@ public class TimedTaskManager {
 			task.remainingTicks--;
 			if (task.remainingTicks <= 0) {
 				if (task.type == TaskType.SPAWN) {
-					mc.player.connection.sendCommand("player " + task.playerName + " spawn");
+					String cmd;
+					if (task.spawnX != null && task.spawnY != null && task.spawnZ != null) {
+						cmd = String.format("player %s spawn at %.1f %.1f %.1f",
+								task.playerName, task.spawnX, task.spawnY, task.spawnZ);
+					} else {
+						cmd = "player " + task.playerName + " spawn";
+					}
+					mc.player.connection.sendCommand(cmd);
 				} else {
 					mc.player.connection.sendCommand("player " + task.playerName + " kill");
 				}

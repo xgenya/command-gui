@@ -34,6 +34,7 @@ public class FakePlayerTab implements Tab {
 	private static final Identifier BUTTON_HIGHLIGHTED_SPRITE = Identifier.withDefaultNamespace("widget/button_highlighted");
 	private static final Identifier TELEPORT_TO_PLAYER_SPRITE = Identifier.withDefaultNamespace("spectator/teleport_to_player");
 	private static final Identifier REMOVE_PLAYER_SPRITE = Identifier.withDefaultNamespace("player_list/remove_player");
+	private static final Identifier CLOCK_SPRITE = Identifier.parse("command-gui:icon/clock");
 
 	private final CommandGUIScreen parent;
 	private final List<Button> playerButtons = new ArrayList<>();
@@ -446,19 +447,29 @@ public class FakePlayerTab implements Tab {
 				}
 				// Pending kill: vanilla "remove player" icon in top-right corner of face
 				if (task != null && task.type == TimedTaskManager.TaskType.KILL) {
+					// Semi-transparent red overlay over entire face
+					guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xBBCC2222);
+					// remove_player icon centered on face (scaled 2x)
+					int iconSize = 10;
 					guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED,
-							REMOVE_PLAYER_SPRITE, faceX + FACE_SIZE - 8, faceY, 8, 8);
+							REMOVE_PLAYER_SPRITE,
+							faceX + (FACE_SIZE - iconSize) / 2, faceY + (FACE_SIZE - iconSize) / 2,
+							iconSize, iconSize);
 				}
 			}
 
 			int timerWidth = 0;
 			if (task != null) {
 				String timeStr = formatTime(task.getRemainingSeconds());
-				timerWidth = mc.font.width(timeStr) + 6;
+				int clockSize = 8;
+				int clockTimerGap = 2;
+				timerWidth = mc.font.width(timeStr) + clockSize + clockTimerGap + 6;
 				int timeColor = task.type == TimedTaskManager.TaskType.SPAWN ? 0xFF55FF55 : 0xFFFF5555;
-				guiGraphics.drawString(mc.font, timeStr,
-						playerListX + PLAYER_ITEM_WIDTH - timerWidth + 2,
-						y + textVertOffset, timeColor);
+				int textX = playerListX + PLAYER_ITEM_WIDTH - mc.font.width(timeStr) - 4;
+				int clockX = textX - clockSize - clockTimerGap;
+				int clockY = y + (PLAYER_ITEM_HEIGHT - clockSize) / 2;
+				guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, CLOCK_SPRITE, clockX, clockY, clockSize, clockSize);
+				guiGraphics.drawString(mc.font, timeStr, textX, y + textVertOffset, timeColor);
 			}
 
 			int maxNameWidth = playerListX + PLAYER_ITEM_WIDTH - nameX - timerWidth - 4;

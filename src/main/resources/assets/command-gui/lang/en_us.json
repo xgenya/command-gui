@@ -97,6 +97,8 @@
 	"screen.command-gui.fakeplayer.killall": "Kill All",
 	"screen.command-gui.fakeplayer.timed.spawn.title": "Timed Spawn",
 	"screen.command-gui.fakeplayer.timed.spawn.short": "Timed Add",
+	"screen.command-gui.fakeplayer.timed.spawn.pos.current": "At Current Position",
+	"screen.command-gui.fakeplayer.timed.spawn.pos.custom": "At Custom Coords",
 	"screen.command-gui.fakeplayer.timed.kill.title": "Timed Kill",
 	"screen.command-gui.fakeplayer.timed.kill.short": "Timed Kill",
 	"screen.command-gui.fakeplayer.timed.name": "Player Name",

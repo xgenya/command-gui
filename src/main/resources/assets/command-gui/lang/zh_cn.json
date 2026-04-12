@@ -97,6 +97,8 @@
 	"screen.command-gui.fakeplayer.killall": "移除全部",
 	"screen.command-gui.fakeplayer.timed.spawn.title": "定时生成假人",
 	"screen.command-gui.fakeplayer.timed.spawn.short": "定时添加",
+	"screen.command-gui.fakeplayer.timed.spawn.pos.current": "在当前位置",
+	"screen.command-gui.fakeplayer.timed.spawn.pos.custom": "在指定坐标",
 	"screen.command-gui.fakeplayer.timed.kill.title": "定时移除假人",
 	"screen.command-gui.fakeplayer.timed.kill.short": "定时移除",
 	"screen.command-gui.fakeplayer.timed.name": "假人名称",
