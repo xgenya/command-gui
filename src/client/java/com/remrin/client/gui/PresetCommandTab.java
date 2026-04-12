@@ -51,8 +51,8 @@ public class PresetCommandTab extends AbstractCommandTab {
 	}
 
 	@Override
-	protected void rebuildCategoryButtons() {
-		categoryButtons.clear();
+	protected void buildAllCategoryButtons() {
+		allCategoryButtons.clear();
 		if (area == null) return;
 
 		int x = area.left();
@@ -63,12 +63,9 @@ public class PresetCommandTab extends AbstractCommandTab {
 				btn -> onCategoryButtonClick(-1)
 		).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
 		allBtn.active = (selectedCategoryIndex != -1);
-		categoryButtons.add(allBtn);
-
-		y += CATEGORY_TAB_HEIGHT + CATEGORY_TAB_GAP;
+		allCategoryButtons.add(allBtn);
 
 		for (int i = 0; i < allGroups.size(); i++) {
-			if (y + CATEGORY_TAB_HEIGHT > area.bottom()) break;
 			VanillaCommands.CommandGroup group = allGroups.get(i);
 			final int index = i;
 			Button catBtn = Button.builder(
@@ -76,8 +73,7 @@ public class PresetCommandTab extends AbstractCommandTab {
 					btn -> onCategoryButtonClick(index)
 			).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
 			catBtn.active = (selectedCategoryIndex != index);
-			categoryButtons.add(catBtn);
-			y += CATEGORY_TAB_HEIGHT + CATEGORY_TAB_GAP;
+			allCategoryButtons.add(catBtn);
 		}
 	}
 
@@ -103,10 +99,10 @@ public class PresetCommandTab extends AbstractCommandTab {
 	}
 
 	private void updateCategoryButtonStates() {
-		if (categoryButtons.isEmpty()) return;
-		categoryButtons.get(0).active = (selectedCategoryIndex != -1);
-		for (int i = 1; i < categoryButtons.size(); i++) {
-			categoryButtons.get(i).active = (selectedCategoryIndex != (i - 1));
+		if (allCategoryButtons.isEmpty()) return;
+		allCategoryButtons.get(0).active = (selectedCategoryIndex != -1);
+		for (int i = 1; i < allCategoryButtons.size(); i++) {
+			allCategoryButtons.get(i).active = (selectedCategoryIndex != (i - 1));
 		}
 	}
 
@@ -122,7 +118,9 @@ public class PresetCommandTab extends AbstractCommandTab {
 
 	private void handleCommand(VanillaCommands.VanillaCommand cmd) {
 		ChainedCommandExecutor.Config config = ChainedCommandExecutor.Config.defaultConfig();
-		if (cmd.minValue != null || cmd.maxValue != null || cmd.quickValues != null) {
+		if (cmd.quickStrValues != null && cmd.quickStrValues.length > 0) {
+			config.withTimeRange(cmd.minValue, cmd.maxValue, cmd.quickStrValues);
+		} else if (cmd.minValue != null || cmd.maxValue != null || cmd.quickValues != null) {
 			config.withNumberRange(cmd.minValue, cmd.maxValue, cmd.quickValues);
 		}
 		ChainedCommandExecutor.execute(parent, cmd.command, config);
@@ -130,5 +128,36 @@ public class PresetCommandTab extends AbstractCommandTab {
 
 	public String getPresetId() {
 		return presetId;
+	}
+
+	public int getScrollOffset() {
+		return scrollOffset;
+	}
+
+	public VanillaCommands.VanillaCommand getCommandAt(int index) {
+		if (index >= 0 && index < filteredCommands.size()) {
+			return filteredCommands.get(index);
+		}
+		return null;
+	}
+
+	public int getCommandIndexAtPosition(double mouseX, double mouseY) {
+		if (area == null) return -1;
+		
+		int cmdAreaLeft = getCommandAreaLeft();
+		int cmdAreaWidth = getCommandAreaWidth();
+		
+		if (mouseX < cmdAreaLeft || mouseX > cmdAreaLeft + cmdAreaWidth) return -1;
+		if (mouseY < area.top() || mouseY > area.bottom()) return -1;
+
+		int colWidth = cmdAreaWidth / COLUMNS;
+		int col = (int) ((mouseX - cmdAreaLeft) / colWidth);
+		int row = (int) ((mouseY - area.top()) / ITEM_HEIGHT);
+		
+		int index = (scrollOffset + row) * COLUMNS + col;
+		if (index >= 0 && index < filteredCommands.size()) {
+			return index;
+		}
+		return -1;
 	}
 }

@@ -15,6 +15,7 @@ public class ChainedCommandExecutor {
 		PLAYER_FAKE,
 		NAME,
 		NUMBER,
+		TIME,
 		COORDS
 	}
 	
@@ -22,6 +23,7 @@ public class ChainedCommandExecutor {
 		public Integer minValue;
 		public Integer maxValue;
 		public int[] quickValues;
+		public String[] quickStrValues;
 		
 		public static Config defaultConfig() {
 			return new Config();
@@ -31,6 +33,13 @@ public class ChainedCommandExecutor {
 			this.minValue = min;
 			this.maxValue = max;
 			this.quickValues = quickValues;
+			return this;
+		}
+		
+		public Config withTimeRange(Integer min, Integer max, String[] quickStrValues) {
+			this.minValue = min;
+			this.maxValue = max;
+			this.quickStrValues = quickStrValues;
 			return this;
 		}
 	}
@@ -60,6 +69,7 @@ public class ChainedCommandExecutor {
 			int playerFakeIdx = command.indexOf("{player_fake}", index);
 			int nameIdx = command.indexOf("{name}", index);
 			int numberIdx = command.indexOf("{number}", index);
+			int timeIdx = command.indexOf("{time}", index);
 			int coordsIdx = command.indexOf("{coords}", index);
 			int xIdx = command.indexOf("{x}", index);
 			
@@ -93,6 +103,11 @@ public class ChainedCommandExecutor {
 				minIdx = numberIdx;
 				minType = PlaceholderType.NUMBER;
 				skipLen = "{number}".length();
+			}
+			if (timeIdx >= 0 && timeIdx < minIdx) {
+				minIdx = timeIdx;
+				minType = PlaceholderType.TIME;
+				skipLen = "{time}".length();
 			}
 			if (coordsIdx >= 0 && coordsIdx < minIdx) {
 				minIdx = coordsIdx;
@@ -206,6 +221,23 @@ public class ChainedCommandExecutor {
 				mc.setScreen(screen);
 			}
 			
+			case TIME -> {
+				TimeInputScreen screen = new TimeInputScreen(
+						parent,
+						Component.translatable("screen.command-gui.input_time"),
+						null,
+						config.quickStrValues
+				) {
+					@Override
+					protected void onTimeConfirmed(String time) {
+						currentCommand = currentCommand.replaceFirst("\\{time\\}", time);
+						currentIndex++;
+						start();
+					}
+				};
+				mc.setScreen(screen);
+			}
+			
 			case COORDS -> {
 				CoordinateInputScreen screen = new CoordinateInputScreen(
 						parent,
@@ -266,6 +298,7 @@ public class ChainedCommandExecutor {
 			command.contains("{player_fake}") ||
 			command.contains("{name}") ||
 			command.contains("{number}") ||
+			command.contains("{time}") ||
 			command.contains("{coords}") ||
 			command.contains("{x}")
 		);

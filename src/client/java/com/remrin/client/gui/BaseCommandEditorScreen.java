@@ -16,6 +16,7 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         "screen.command-gui.type.player_fake_full",
         "screen.command-gui.type.text_full",
         "screen.command-gui.type.number_full",
+        "screen.command-gui.type.time_full",
         "screen.command-gui.type.coord_full"
     };
 
@@ -25,6 +26,7 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
         "{player_fake}",
         "{name}",
         "{number}",
+        "{time}",
         "{coords}"
     };
 

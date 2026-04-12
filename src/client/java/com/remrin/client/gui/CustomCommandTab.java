@@ -52,8 +52,8 @@ public class CustomCommandTab extends AbstractCommandTab {
 	}
 
 	@Override
-	protected void rebuildCategoryButtons() {
-		categoryButtons.clear();
+	protected void buildAllCategoryButtons() {
+		allCategoryButtons.clear();
 		if (area == null) return;
 
 		int x = area.left();
@@ -64,13 +64,9 @@ public class CustomCommandTab extends AbstractCommandTab {
 				btn -> onCategoryButtonClick(null)
 		).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
 		allBtn.active = (selectedCategoryId != null);
-		categoryButtons.add(allBtn);
-
-		y += CATEGORY_TAB_HEIGHT + CATEGORY_TAB_GAP;
+		allCategoryButtons.add(allBtn);
 
 		for (CommandConfig.Category category : CommandConfig.getCategories()) {
-			if (y + CATEGORY_TAB_HEIGHT > area.bottom() - CATEGORY_TAB_HEIGHT - CATEGORY_TAB_GAP) break;
-
 			final String catId = category.id;
 			Component btnText = category.getDisplayName() != null
 					? Component.literal(category.getDisplayName())
@@ -79,18 +75,15 @@ public class CustomCommandTab extends AbstractCommandTab {
 			Button catBtn = Button.builder(btnText, btn -> onCategoryButtonClick(catId))
 					.bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
 			catBtn.active = !catId.equals(selectedCategoryId);
-			categoryButtons.add(catBtn);
-
-			y += CATEGORY_TAB_HEIGHT + CATEGORY_TAB_GAP;
+			allCategoryButtons.add(catBtn);
 		}
 
-		y = area.bottom() - CATEGORY_TAB_HEIGHT;
 		Button addCatBtn = Button.builder(
 				Component.literal("+"),
 				btn -> openAddCategoryScreen()
 		).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
 		addCatBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.add_category")));
-		categoryButtons.add(addCatBtn);
+		allCategoryButtons.add(addCatBtn);
 	}
 
 	@Override
@@ -115,7 +108,8 @@ public class CustomCommandTab extends AbstractCommandTab {
 			selectedCategoryId = categoryId;
 			scrollOffset = 0;
 			buildFilteredCommands();
-			rebuildCategoryButtons();
+			buildAllCategoryButtons();
+			rebuildVisibleCategoryButtons();
 			rebuildButtons();
 		});
 	}
@@ -131,7 +125,8 @@ public class CustomCommandTab extends AbstractCommandTab {
 	public void refresh() {
 		this.scrollOffset = 0;
 		buildFilteredCommands();
-		rebuildCategoryButtons();
+		buildAllCategoryButtons();
+		rebuildVisibleCategoryButtons();
 		rebuildButtons();
 	}
 

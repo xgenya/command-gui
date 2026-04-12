@@ -3,13 +3,10 @@
 	"nameKey": "screen.command-gui.preset.carpet",
 	"groups": [
 		{
-			"nameKey": "screen.command-gui.carpet.tick",
+			"nameKey": "screen.command-gui.carpet.profile",
 			"commands": [
-				{"nameKey": "screen.command-gui.carpet.tick.freeze", "command": "/tick freeze", "description": "screen.command-gui.carpet.tick.freeze.desc"},
-				{"nameKey": "screen.command-gui.carpet.tick.step", "command": "/tick step {number}", "description": "screen.command-gui.carpet.tick.step.desc", "minValue": 1, "maxValue": 72000, "quickValues": [1, 5, 10, 20, 50, 100, 200, 1000]},
-				{"nameKey": "screen.command-gui.carpet.tick.rate", "command": "/tick rate {number}", "description": "screen.command-gui.carpet.tick.rate.desc", "minValue": 1, "maxValue": 500, "quickValues": [1, 5, 10, 20, 40, 60, 100, 200]},
-				{"nameKey": "screen.command-gui.carpet.tick.warp", "command": "/tick warp {number}", "description": "screen.command-gui.carpet.tick.warp.desc", "minValue": 0, "maxValue": 720000, "quickValues": [0, 1000, 6000, 12000, 24000, 72000, 144000]},
-				{"nameKey": "screen.command-gui.carpet.tick.superhot", "command": "/tick superHot", "description": "screen.command-gui.carpet.tick.superhot.desc"}
+				{"nameKey": "screen.command-gui.carpet.profile.health", "command": "/profile health {number}", "description": "screen.command-gui.carpet.profile.health.desc", "minValue": 20, "maxValue": 24000, "quickValues": [20, 100, 200, 600, 1200]},
+				{"nameKey": "screen.command-gui.carpet.profile.entities", "command": "/profile entities {number}", "description": "screen.command-gui.carpet.profile.entities.desc", "minValue": 20, "maxValue": 24000, "quickValues": [20, 100, 200, 600, 1200]}
 			]
 		},
 		{
@@ -28,7 +25,7 @@
 				{"nameKey": "screen.command-gui.carpet.player.attack_once", "command": "/player {player_fake} attack once", "description": "screen.command-gui.carpet.player.attack_once.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.use", "command": "/player {player_fake} use continuous", "description": "screen.command-gui.carpet.player.use.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.use_once", "command": "/player {player_fake} use once", "description": "screen.command-gui.carpet.player.use_once.desc"},
-				{"nameKey": "screen.command-gui.carpet.player.jump", "command": "/player {player_fake} jump", "description": "screen.command-gui.carpet.player.jump.desc"},
+				{"nameKey": "screen.command-gui.carpet.player.jump", "command": "/player {player_fake} jump continuous", "description": "screen.command-gui.carpet.player.jump.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.drop", "command": "/player {player_fake} drop", "description": "screen.command-gui.carpet.player.drop.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.dropstack", "command": "/player {player_fake} dropStack", "description": "screen.command-gui.carpet.player.dropstack.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.swaphands", "command": "/player {player_fake} swapHands", "description": "screen.command-gui.carpet.player.swaphands.desc"}
@@ -43,8 +40,8 @@
 				{"nameKey": "screen.command-gui.carpet.player.unsprint", "command": "/player {player_fake} unsprint", "description": "screen.command-gui.carpet.player.unsprint.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.mount", "command": "/player {player_fake} mount", "description": "screen.command-gui.carpet.player.mount.desc"},
 				{"nameKey": "screen.command-gui.carpet.player.dismount", "command": "/player {player_fake} dismount", "description": "screen.command-gui.carpet.player.dismount.desc"},
-				{"nameKey": "screen.command-gui.carpet.player.turn", "command": "/player {player_fake} turn", "description": "screen.command-gui.carpet.player.turn.desc"},
-				{"nameKey": "screen.command-gui.carpet.player.look", "command": "/player {player_fake} look at {coords}", "description": "screen.command-gui.carpet.player.look.desc"}
+				{"nameKey": "screen.command-gui.carpet.player.look", "command": "/player {player_fake} look at {coords}", "description": "screen.command-gui.carpet.player.look.desc"},
+				{"nameKey": "screen.command-gui.carpet.player.turn", "command": "/player {player_fake} turn", "description": "screen.command-gui.carpet.player.turn.desc"}
 			]
 		},
 		{
@@ -54,7 +51,7 @@
 				{"nameKey": "screen.command-gui.carpet.log.clear", "command": "/log clear", "description": "screen.command-gui.carpet.log.clear.desc"},
 				{"nameKey": "screen.command-gui.carpet.log.tps", "command": "/log tps", "description": "screen.command-gui.carpet.log.tps.desc"},
 				{"nameKey": "screen.command-gui.carpet.log.mobcaps", "command": "/log mobcaps", "description": "screen.command-gui.carpet.log.mobcaps.desc"},
-				{"nameKey": "screen.command-gui.carpet.log.mobcaps_dynamic", "command": "/log mobcaps dynamic", "description": "screen.command-gui.carpet.log.mobcaps_dynamic.desc"}
+				{"nameKey": "screen.command-gui.carpet.log.counter", "command": "/log counter", "description": "screen.command-gui.carpet.log.counter.desc"}
 			]
 		},
 		{
@@ -62,16 +59,13 @@
 			"commands": [
 				{"nameKey": "screen.command-gui.carpet.log.tnt", "command": "/log tnt", "description": "screen.command-gui.carpet.log.tnt.desc"},
 				{"nameKey": "screen.command-gui.carpet.log.projectiles", "command": "/log projectiles", "description": "screen.command-gui.carpet.log.projectiles.desc"},
-				{"nameKey": "screen.command-gui.carpet.log.packets", "command": "/log packets", "description": "screen.command-gui.carpet.log.packets.desc"},
-				{"nameKey": "screen.command-gui.carpet.log.pathfinding", "command": "/log pathfinding", "description": "screen.command-gui.carpet.log.pathfinding.desc"}
+				{"nameKey": "screen.command-gui.carpet.log.fallingblocks", "command": "/log fallingBlocks", "description": "screen.command-gui.carpet.log.fallingblocks.desc"}
 			]
 		},
 		{
 			"nameKey": "screen.command-gui.carpet.info",
 			"commands": [
-				{"nameKey": "screen.command-gui.carpet.carpet_list", "command": "/carpet list", "description": "screen.command-gui.carpet.carpet_list.desc"},
-				{"nameKey": "screen.command-gui.carpet.tick.health", "command": "/tick health", "description": "screen.command-gui.carpet.tick.health.desc"},
-				{"nameKey": "screen.command-gui.carpet.tick.entities", "command": "/tick entities", "description": "screen.command-gui.carpet.tick.entities.desc"},
+				{"nameKey": "screen.command-gui.carpet.carpet_list", "command": "/carpet list defaults", "description": "screen.command-gui.carpet.carpet_list.desc"},
 				{"nameKey": "screen.command-gui.carpet.ping", "command": "/ping", "description": "screen.command-gui.carpet.ping.desc"}
 			]
 		},
