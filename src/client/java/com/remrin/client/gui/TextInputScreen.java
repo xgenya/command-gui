@@ -8,15 +8,13 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
-public class TextInputScreen extends Screen {
-	private final Screen parent;
+public class TextInputScreen extends BaseParentedScreen<Screen> {
 	private final String commandTemplate;
 	private final String placeholder;
 	private EditBox inputField;
 
 	public TextInputScreen(Screen parent, Component title, String commandTemplate, String placeholder) {
-		super(title);
-		this.parent = parent;
+		super(title, parent);
 		this.commandTemplate = commandTemplate;
 		this.placeholder = placeholder;
 	}
@@ -37,7 +35,6 @@ public class TextInputScreen extends Screen {
 	}
 
 	protected void onInputConfirmed(String input) {
-		// Override this for custom behavior
 	}
 
 	@Override
@@ -68,11 +65,7 @@ public class TextInputScreen extends Screen {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc != null && mc.player != null) {
 			mc.setScreen(null);
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendChat(command);
-			}
+			ChainedCommandExecutor.sendCommand(command);
 		}
 	}
 
@@ -87,15 +80,5 @@ public class TextInputScreen extends Screen {
 		guiGraphics.drawCenteredString(this.font,
 				Component.translatable("screen.command-gui.enter_to_confirm"),
 				centerX, centerY + 20, 0xFF888888);
-	}
-
-	@Override
-	public void onClose() {
-		this.minecraft.setScreen(parent);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }

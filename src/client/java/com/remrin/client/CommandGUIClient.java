@@ -3,7 +3,9 @@ package com.remrin.client;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.remrin.client.config.CommandConfig;
 import com.remrin.client.config.PresetConfig;
+import com.remrin.client.config.SettingsConfig;
 import com.remrin.client.gui.CommandGUIScreen;
+import com.remrin.client.gui.TimedTaskManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -23,6 +25,7 @@ public class CommandGUIClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		CommandConfig.load();
+		SettingsConfig.load();
 		
 		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
 				new SimpleSynchronousResourceReloadListener() {
@@ -53,6 +56,8 @@ public class CommandGUIClient implements ClientModInitializer {
 					client.setScreen(new CommandGUIScreen());
 				}
 			}
+			
+			TimedTaskManager.tick();
 		});
 	}
 }

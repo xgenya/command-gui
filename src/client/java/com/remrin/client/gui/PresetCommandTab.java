@@ -1,89 +1,26 @@
 package com.remrin.client.gui;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.components.tabs.Tab;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
-public class PresetCommandTab implements Tab {
-	private static final int ITEM_HEIGHT = 24;
-	private static final int CATEGORY_HEIGHT = 18;
-	private static final int COLUMNS = 3;
-
-	private final Screen parent;
+public class PresetCommandTab extends AbstractCommandTab {
 	private final String presetId;
 	private final String nameKey;
-	private final List<Button> commandButtons = new ArrayList<>();
-	private final List<RenderItem> renderItems = new ArrayList<>();
-	private int scrollOffset = 0;
-	private ScreenRectangle area;
-	private String searchText = "";
-
-	private static class RenderItem {
-		enum Type { CATEGORY, COMMAND }
-		Type type;
-		String categoryNameKey;
-		VanillaCommands.VanillaCommand command;
-		
-		static RenderItem category(String nameKey) {
-			RenderItem item = new RenderItem();
-			item.type = Type.CATEGORY;
-			item.categoryNameKey = nameKey;
-			return item;
-		}
-		
-		static RenderItem command(VanillaCommands.VanillaCommand cmd) {
-			RenderItem item = new RenderItem();
-			item.type = Type.COMMAND;
-			item.command = cmd;
-			return item;
-		}
-	}
+	private final List<VanillaCommands.CommandGroup> allGroups = new ArrayList<>();
+	private final List<VanillaCommands.VanillaCommand> filteredCommands = new ArrayList<>();
+	private int selectedCategoryIndex = -1;
 
 	public PresetCommandTab(Screen parent, String presetId, String nameKey) {
-		this.parent = parent;
+		super(parent);
 		this.presetId = presetId;
 		this.nameKey = nameKey;
-		buildRenderItems();
-	}
-
-	public void setSearchText(String text) {
-		this.searchText = text.toLowerCase().trim();
-		this.scrollOffset = 0;
-		buildRenderItems();
-		rebuildButtons();
-	}
-
-	private void buildRenderItems() {
-		renderItems.clear();
-		String search = searchText;
-		
-		for (VanillaCommands.CommandGroup group : VanillaCommands.getGroups(presetId)) {
-			List<VanillaCommands.VanillaCommand> matchedCommands = new ArrayList<>();
-			
-			for (VanillaCommands.VanillaCommand cmd : group.commands) {
-				if (search.isEmpty() ||
-					cmd.getName().getString().toLowerCase().contains(search) ||
-					cmd.command.toLowerCase().contains(search)) {
-					matchedCommands.add(cmd);
-				}
-			}
-			
-			if (!matchedCommands.isEmpty()) {
-				renderItems.add(RenderItem.category(group.nameKey));
-				for (VanillaCommands.VanillaCommand cmd : matchedCommands) {
-					renderItems.add(RenderItem.command(cmd));
-				}
-			}
-		}
+		this.allGroups.addAll(VanillaCommands.getGroups(presetId));
+		buildFilteredCommands();
 	}
 
 	@Override
@@ -92,201 +29,135 @@ public class PresetCommandTab implements Tab {
 	}
 
 	@Override
-	public Component getTabExtraNarration() {
-		return Component.empty();
+	protected int getFilteredCommandCount() {
+		return filteredCommands.size();
 	}
 
 	@Override
-	public void visitChildren(Consumer consumer) {
-		commandButtons.forEach(consumer);
-	}
-
-	@Override
-	public void doLayout(ScreenRectangle rectangle) {
-		this.area = rectangle;
-		rebuildButtons();
-	}
-
-	private void rebuildButtons() {
-		commandButtons.clear();
-		if (area == null) return;
-
-		int listWidth = area.width();
-		int colWidth = listWidth / COLUMNS;
-		int y = area.top();
-		int currentCol = 0;
-		int maxY = area.bottom();
-		int skippedRows = 0;
-
-		for (int i = 0; i < renderItems.size(); i++) {
-			RenderItem item = renderItems.get(i);
-			
-			if (item.type == RenderItem.Type.CATEGORY) {
-				if (currentCol > 0) {
-					if (skippedRows < scrollOffset) {
-						skippedRows++;
-					} else {
-						y += ITEM_HEIGHT;
-					}
-					currentCol = 0;
-				}
-				
-				if (skippedRows < scrollOffset) {
-					skippedRows++;
-					continue;
-				}
-				
-				if (y + CATEGORY_HEIGHT > maxY) break;
-				y += CATEGORY_HEIGHT;
-			} else {
-				if (skippedRows >= scrollOffset) {
-					if (y + ITEM_HEIGHT > maxY) break;
-					
-					int x = area.left() + currentCol * colWidth;
-					int btnWidth = colWidth - 4;
-
-					VanillaCommands.VanillaCommand cmd = item.command;
-					Button cmdBtn = Button.builder(
-							cmd.getName(),
-							btn -> handleCommand(cmd)
-					).bounds(x + 2, y, btnWidth, ITEM_HEIGHT - 2).build();
-					cmdBtn.setTooltip(Tooltip.create(Component.literal(cmd.command)));
-
-					commandButtons.add(cmdBtn);
-				}
-				
-				currentCol++;
-				if (currentCol >= COLUMNS) {
-					currentCol = 0;
-					if (skippedRows < scrollOffset) {
-						skippedRows++;
-					} else {
-						y += ITEM_HEIGHT;
-					}
+	protected void buildFilteredCommands() {
+		filteredCommands.clear();
+		String search = searchText;
+		for (int i = 0; i < allGroups.size(); i++) {
+			if (selectedCategoryIndex >= 0 && selectedCategoryIndex != i) continue;
+			VanillaCommands.CommandGroup group = allGroups.get(i);
+			for (VanillaCommands.VanillaCommand cmd : group.commands) {
+				if (search.isEmpty() ||
+					cmd.getName().getString().toLowerCase().contains(search) ||
+					cmd.command.toLowerCase().contains(search)) {
+					filteredCommands.add(cmd);
 				}
 			}
 		}
 	}
 
-	public void renderCategories(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+	@Override
+	protected void buildAllCategoryButtons() {
+		allCategoryButtons.clear();
 		if (area == null) return;
-		
-		Minecraft mc = Minecraft.getInstance();
-		int y = area.top();
-		int currentCol = 0;
-		int skippedRows = 0;
 
-		for (int i = 0; i < renderItems.size(); i++) {
-			RenderItem item = renderItems.get(i);
-			
-			if (item.type == RenderItem.Type.CATEGORY) {
-				if (currentCol > 0) {
-					if (skippedRows < scrollOffset) {
-						skippedRows++;
-					} else {
-						y += ITEM_HEIGHT;
-					}
-					currentCol = 0;
-				}
-				
-				if (skippedRows < scrollOffset) {
-					skippedRows++;
-					continue;
-				}
-				
-				if (y + CATEGORY_HEIGHT > area.bottom()) break;
-				
-				guiGraphics.drawString(mc.font, 
-						Component.translatable(item.categoryNameKey),
-						area.left() + 2, y + 4, 0xFFAAAAAA);
-				y += CATEGORY_HEIGHT;
-			} else {
-				currentCol++;
-				if (currentCol >= COLUMNS) {
-					currentCol = 0;
-					if (skippedRows < scrollOffset) {
-						skippedRows++;
-					} else {
-						y += ITEM_HEIGHT;
-					}
-				}
-			}
+		int x = area.left();
+		int y = area.top();
+
+		Button allBtn = Button.builder(
+				Component.translatable("screen.command-gui.category.all"),
+				btn -> onCategoryButtonClick(-1)
+		).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
+		allBtn.active = (selectedCategoryIndex != -1);
+		allCategoryButtons.add(allBtn);
+
+		for (int i = 0; i < allGroups.size(); i++) {
+			VanillaCommands.CommandGroup group = allGroups.get(i);
+			final int index = i;
+			Button catBtn = Button.builder(
+					Component.translatable(group.nameKey),
+					btn -> onCategoryButtonClick(index)
+			).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
+			catBtn.active = (selectedCategoryIndex != index);
+			allCategoryButtons.add(catBtn);
 		}
+	}
+
+	@Override
+	protected Button buildCommandButton(int index, int x, int y, int width, int height) {
+		VanillaCommands.VanillaCommand cmd = filteredCommands.get(index);
+		Button btn = Button.builder(cmd.getName(), b -> handleCommand(cmd))
+				.bounds(x, y, width, height).build();
+
+		Component desc = cmd.getDescription();
+		if (desc != null) {
+			btn.setTooltip(Tooltip.create(desc.copy().append("\n§7" + cmd.command)));
+		} else {
+			btn.setTooltip(Tooltip.create(Component.literal(cmd.command)));
+		}
+		return btn;
+	}
+
+	private void onCategoryButtonClick(int index) {
+		if (selectedCategoryIndex != index) {
+			selectCategory(index);
+		}
+	}
+
+	private void updateCategoryButtonStates() {
+		if (allCategoryButtons.isEmpty()) return;
+		allCategoryButtons.get(0).active = (selectedCategoryIndex != -1);
+		for (int i = 1; i < allCategoryButtons.size(); i++) {
+			allCategoryButtons.get(i).active = (selectedCategoryIndex != (i - 1));
+		}
+	}
+
+	private void selectCategory(int index) {
+		notifyCategoryChange(() -> {
+			selectedCategoryIndex = index;
+			scrollOffset = 0;
+			buildFilteredCommands();
+			rebuildButtons();
+			updateCategoryButtonStates();
+		});
 	}
 
 	private void handleCommand(VanillaCommands.VanillaCommand cmd) {
 		ChainedCommandExecutor.Config config = ChainedCommandExecutor.Config.defaultConfig();
-		
-		if (cmd.minValue != null || cmd.maxValue != null || cmd.quickValues != null) {
+		if (cmd.quickStrValues != null && cmd.quickStrValues.length > 0) {
+			config.withTimeRange(cmd.minValue, cmd.maxValue, cmd.quickStrValues);
+		} else if (cmd.minValue != null || cmd.maxValue != null || cmd.quickValues != null) {
 			config.withNumberRange(cmd.minValue, cmd.maxValue, cmd.quickValues);
 		}
-		
 		ChainedCommandExecutor.execute(parent, cmd.command, config);
 	}
 
-	public void scroll(double delta) {
-		if (area == null) return;
-
-		int maxScroll = getMaxScroll();
-		if (maxScroll > 0) {
-			if (delta > 0 && scrollOffset > 0) {
-				scrollOffset--;
-				rebuildButtons();
-			} else if (delta < 0 && scrollOffset < maxScroll) {
-				scrollOffset++;
-				rebuildButtons();
-			}
-		}
-	}
-
-	public void setScrollOffset(int offset) {
-		int maxScroll = getMaxScroll();
-		this.scrollOffset = Math.max(0, Math.min(offset, maxScroll));
-		rebuildButtons();
+	public String getPresetId() {
+		return presetId;
 	}
 
 	public int getScrollOffset() {
 		return scrollOffset;
 	}
 
-	public int getMaxScroll() {
-		if (area == null || renderItems.isEmpty()) return 0;
-		int totalHeight = calculateTotalHeight();
-		int visibleHeight = area.height();
-		if (totalHeight <= visibleHeight) return 0;
-		return renderItems.size() - 1;
+	public VanillaCommands.VanillaCommand getCommandAt(int index) {
+		if (index >= 0 && index < filteredCommands.size()) {
+			return filteredCommands.get(index);
+		}
+		return null;
 	}
 
-	private int calculateTotalHeight() {
-		int height = 0;
-		int currentCol = 0;
+	public int getCommandIndexAtPosition(double mouseX, double mouseY) {
+		if (area == null) return -1;
 		
-		for (RenderItem item : renderItems) {
-			if (item.type == RenderItem.Type.CATEGORY) {
-				if (currentCol > 0) {
-					height += ITEM_HEIGHT;
-					currentCol = 0;
-				}
-				height += CATEGORY_HEIGHT;
-			} else {
-				currentCol++;
-				if (currentCol >= COLUMNS) {
-					currentCol = 0;
-					height += ITEM_HEIGHT;
-				}
-			}
-		}
-		if (currentCol > 0) {
-			height += ITEM_HEIGHT;
-		}
-		return height;
-	}
+		int cmdAreaLeft = getCommandAreaLeft();
+		int cmdAreaWidth = getCommandAreaWidth();
+		
+		if (mouseX < cmdAreaLeft || mouseX > cmdAreaLeft + cmdAreaWidth) return -1;
+		if (mouseY < area.top() || mouseY > area.bottom()) return -1;
 
-	public List<Button> getButtons() {
-		return commandButtons;
-	}
-	
-	public String getPresetId() {
-		return presetId;
+		int colWidth = cmdAreaWidth / COLUMNS;
+		int col = (int) ((mouseX - cmdAreaLeft) / colWidth);
+		int row = (int) ((mouseY - area.top()) / ITEM_HEIGHT);
+		
+		int index = (scrollOffset + row) * COLUMNS + col;
+		if (index >= 0 && index < filteredCommands.size()) {
+			return index;
+		}
+		return -1;
 	}
 }

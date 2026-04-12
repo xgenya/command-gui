@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-public class PlayerSelectorScreen extends Screen {
+public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
 	private static final int ITEM_WIDTH = 90;
 	private static final int ITEM_HEIGHT = 24;
 	private static final int COLUMNS = 4;
@@ -32,7 +32,6 @@ public class PlayerSelectorScreen extends Screen {
 		return playerInfo.getLatency() == 0;
 	}
 
-	private final Screen parent;
 	private final String commandTemplate;
 	private final Consumer<String> onPlayerSelected;
 	private final Component titleText;
@@ -47,21 +46,12 @@ public class PlayerSelectorScreen extends Screen {
 		this(parent, title, commandTemplate, FilterMode.EXCLUDE_SELF, null);
 	}
 
-	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate, boolean excludeSelf) {
-		this(parent, title, commandTemplate, excludeSelf ? FilterMode.EXCLUDE_SELF : FilterMode.ALL, null);
-	}
-
 	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate, FilterMode filterMode) {
 		this(parent, title, commandTemplate, filterMode, null);
 	}
 
-	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate, boolean excludeSelf, Consumer<String> onPlayerSelected) {
-		this(parent, title, commandTemplate, excludeSelf ? FilterMode.EXCLUDE_SELF : FilterMode.ALL, onPlayerSelected);
-	}
-
 	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate, FilterMode filterMode, Consumer<String> onPlayerSelected) {
-		super(title);
-		this.parent = parent;
+		super(title, parent);
 		this.titleText = title;
 		this.commandTemplate = commandTemplate;
 		this.filterMode = filterMode;
@@ -146,7 +136,6 @@ public class PlayerSelectorScreen extends Screen {
 	}
 
 	protected void onPlayerSelected(String playerName) {
-		// Override this for custom behavior
 	}
 
 	private void selectPlayer(String playerName) {
@@ -165,11 +154,7 @@ public class PlayerSelectorScreen extends Screen {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc != null && mc.player != null) {
 			mc.setScreen(null);
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendChat(command);
-			}
+			ChainedCommandExecutor.sendCommand(command);
 		}
 	}
 
@@ -240,15 +225,5 @@ public class PlayerSelectorScreen extends Screen {
 
 		int bottomY = this.height - 45;
 		guiGraphics.fill(0, bottomY, this.width, bottomY + 1, 0xFF555555);
-	}
-
-	@Override
-	public void onClose() {
-		this.minecraft.setScreen(parent);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }

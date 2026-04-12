@@ -3,6 +3,7 @@ package com.remrin.client.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import com.remrin.CommandGUI;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -35,6 +36,7 @@ public class CommandConfig {
 	public static class Category {
 		public String id;
 		public String nameKey;
+		public String displayName;
 		public LinkedHashMap<String, CommandEntry> commands = new LinkedHashMap<>();
 
 		public Category() {}
@@ -42,6 +44,13 @@ public class CommandConfig {
 		public Category(String id, String nameKey) {
 			this.id = id;
 			this.nameKey = nameKey;
+		}
+
+		public String getDisplayName() {
+			if (displayName != null && !displayName.isEmpty()) {
+				return displayName;
+			}
+			return null;
 		}
 	}
 
@@ -58,7 +67,9 @@ public class CommandConfig {
 
 		public boolean hasPlaceholders() {
 			return command != null && (
+				command.contains("{player_all}") ||
 				command.contains("{player}") ||
+				command.contains("{player_fake}") ||
 				command.contains("{name}") ||
 				command.contains("{number}") ||
 				command.contains("{coords}") ||
@@ -75,7 +86,7 @@ public class CommandConfig {
 					configData = loaded;
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+				CommandGUI.LOGGER.error("Failed to load command config", e);
 			}
 		}
 	}
@@ -87,7 +98,7 @@ public class CommandConfig {
 				GSON.toJson(configData, writer);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			CommandGUI.LOGGER.error("Failed to save command config", e);
 		}
 	}
 
@@ -111,6 +122,15 @@ public class CommandConfig {
 	public static void addCategory(String id, String nameKey) {
 		if (getCategory(id) == null) {
 			configData.categories.add(new Category(id, nameKey));
+			save();
+		}
+	}
+
+	public static void addCategory(String id, String nameKey, String displayName) {
+		if (getCategory(id) == null) {
+			Category cat = new Category(id, nameKey);
+			cat.displayName = displayName;
+			configData.categories.add(cat);
 			save();
 		}
 	}
