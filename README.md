@@ -107,7 +107,7 @@ Click the gear icon to configure:
 
 ### License
 
-MIT
+GPL-3.0
 
 ---
 
@@ -214,4 +214,4 @@ MIT
 
 ### 许可证
 
-MIT
+GPL-3.0

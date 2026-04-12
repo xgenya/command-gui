@@ -17,13 +17,18 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class FakePlayerTab implements Tab {
-	private static final int PLAYER_ITEM_WIDTH = 140;
-	private static final int PLAYER_ITEM_HEIGHT = 20;
-	private static final int ITEM_GAP = 2;
+	private static final int PLAYER_ITEM_WIDTH = 148;
+	private static final int PLAYER_ITEM_HEIGHT = 26;
+	private static final int ITEM_GAP = 0;
 	private static final int FACE_SIZE = 16;
 	private static final int ACTION_BUTTON_WIDTH = 80;
 	private static final int ACTION_BUTTON_HEIGHT = 20;
 	private static final int SEPARATOR_WIDTH = 1;
+	// Left accent bar width for selected items
+	private static final int ACCENT_WIDTH = 3;
+	// Padding between accent/face/name
+	private static final int FACE_PAD_LEFT = 5;  // accent(3) + gap(2)
+	private static final int NAME_PAD_LEFT = 4;
 
 	private final CommandGUIScreen parent;
 	private final List<Button> playerButtons = new ArrayList<>();
@@ -140,16 +145,17 @@ public class FakePlayerTab implements Tab {
 		if (area == null) return;
 
 		int startY = area.top();
-		int visibleRows = area.height() / (PLAYER_ITEM_HEIGHT + ITEM_GAP);
+		int visibleRows = area.height() / PLAYER_ITEM_HEIGHT;
 		int startIndex = scrollOffset;
-		// +1 to include any partially-visible last row (face renders but button was missing)
+		// +1 to include any partially-visible last row
 		int endIndex = Math.min(startIndex + visibleRows + 1, displayList.size());
 
 		for (int i = startIndex; i < endIndex; i++) {
 			String playerName = displayList.get(i);
-			int y = startY + (i - scrollOffset) * (PLAYER_ITEM_HEIGHT + ITEM_GAP);
+			int y = startY + (i - scrollOffset) * PLAYER_ITEM_HEIGHT;
+			// Transparent click target — all visuals rendered manually
 			Button btn = Button.builder(
-					Component.literal("    " + playerName),
+					Component.empty(),
 					b -> selectPlayer(playerName)
 			).bounds(playerListX, y, PLAYER_ITEM_WIDTH, PLAYER_ITEM_HEIGHT).build();
 			playerButtons.add(btn);
@@ -335,82 +341,141 @@ public class FakePlayerTab implements Tab {
 		}
 	}
 	
-	public void render(GuiGraphics guiGraphics) {
+	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 		if (area == null) return;
-		
-		if (!displayList.isEmpty()) {
-			guiGraphics.fill(separatorX, area.top(), separatorX + SEPARATOR_WIDTH, area.bottom(), 0xFF555555);
+
+		if (displayList.isEmpty()) {
+			Minecraft mc = Minecraft.getInstance();
+			guiGraphics.drawCenteredString(mc.font,
+					Component.translatable("screen.command-gui.fakeplayer.empty"),
+					playerListX + PLAYER_ITEM_WIDTH / 2,
+					area.top() + area.height() / 2 - 4,
+					0xFF666666);
+			return;
 		}
+
+		int startY = area.top();
+		int visibleRows = area.height() / PLAYER_ITEM_HEIGHT;
+		int endIndex = Math.min(scrollOffset + visibleRows + 1, displayList.size());
+
+		// Subtle list panel background
+		guiGraphics.fill(playerListX - 1, area.top(), playerListX + PLAYER_ITEM_WIDTH + 1, area.bottom(), 0xFF161616);
+
+		for (int i = scrollOffset; i < endIndex; i++) {
+			String name = displayList.get(i);
+			int y = startY + (i - scrollOffset) * PLAYER_ITEM_HEIGHT;
+			if (y >= area.bottom()) break;
+
+			boolean isSelected = name.equals(selectedPlayer);
+			boolean isHovered = !isSelected
+					&& mouseX >= playerListX && mouseX < playerListX + PLAYER_ITEM_WIDTH
+					&& mouseY >= y && mouseY < y + PLAYER_ITEM_HEIGHT;
+
+			int bgColor;
+			if (isSelected) {
+				bgColor = 0xFF193619;
+			} else if (isHovered) {
+				bgColor = 0xFF2C2C2C;
+			} else {
+				bgColor = (i % 2 == 0) ? 0xFF202020 : 0xFF1C1C1C;
+			}
+			guiGraphics.fill(playerListX, y, playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, bgColor);
+
+			// Selected: left accent bar
+			if (isSelected) {
+				guiGraphics.fill(playerListX, y, playerListX + ACCENT_WIDTH, y + PLAYER_ITEM_HEIGHT, 0xFF3ECC3E);
+			}
+
+			// Bottom divider
+			if (i < displayList.size() - 1 && y + PLAYER_ITEM_HEIGHT < area.bottom()) {
+				guiGraphics.fill(playerListX, y + PLAYER_ITEM_HEIGHT - 1,
+						playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, 0xFF2A2A2A);
+			}
+		}
+
+		// Vertical separator between list and actions
+		guiGraphics.fill(separatorX, area.top(), separatorX + SEPARATOR_WIDTH, area.bottom(), 0xFF404040);
 	}
 	
 	public void renderScrollbar(GuiGraphics guiGraphics) {
 		if (area == null || displayList.isEmpty()) return;
-		
+
 		int maxScroll = getMaxScroll();
 		if (maxScroll <= 0) return;
-		
-		int scrollbarX = separatorX - 8;
+
+		int scrollbarX = separatorX - 6;
 		int scrollbarTop = area.top();
 		int scrollbarHeight = area.height();
-		int scrollbarWidth = 4;
-		
-		guiGraphics.fill(scrollbarX, scrollbarTop, scrollbarX + scrollbarWidth, scrollbarTop + scrollbarHeight, 0xFF000000);
-		
-		int thumbHeight = Math.max(15, scrollbarHeight * scrollbarHeight / (scrollbarHeight + maxScroll * (PLAYER_ITEM_HEIGHT + ITEM_GAP)));
+		int scrollbarWidth = 3;
+
+		guiGraphics.fill(scrollbarX, scrollbarTop, scrollbarX + scrollbarWidth, scrollbarTop + scrollbarHeight, 0xFF111111);
+
+		int thumbHeight = Math.max(12, scrollbarHeight * scrollbarHeight / (scrollbarHeight + maxScroll * PLAYER_ITEM_HEIGHT));
 		int thumbY = scrollbarTop + (scrollbarHeight - thumbHeight) * scrollOffset / maxScroll;
-		
-		guiGraphics.fill(scrollbarX, thumbY, scrollbarX + scrollbarWidth, thumbY + thumbHeight, 0xFF808080);
-		guiGraphics.fill(scrollbarX, thumbY, scrollbarX + scrollbarWidth - 1, thumbY + thumbHeight - 1, 0xFFC0C0C0);
+
+		guiGraphics.fill(scrollbarX, thumbY, scrollbarX + scrollbarWidth, thumbY + thumbHeight, 0xFF555555);
+		guiGraphics.fill(scrollbarX, thumbY, scrollbarX + scrollbarWidth - 1, thumbY + thumbHeight - 1, 0xFF888888);
 	}
 	
 	public void renderFaces(GuiGraphics guiGraphics) {
 		if (area == null) return;
-		
+
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.getConnection() == null) return;
-		
+
 		int startY = area.top();
-		
+		int faceX = playerListX + FACE_PAD_LEFT;
+		int nameX = faceX + FACE_SIZE + NAME_PAD_LEFT;
+		int faceVertOffset = (PLAYER_ITEM_HEIGHT - FACE_SIZE) / 2;
+		int textVertOffset = (PLAYER_ITEM_HEIGHT - 9) / 2;
+
 		for (int i = 0; i < displayList.size(); i++) {
 			String playerName = displayList.get(i);
-			int y = startY + (i - scrollOffset) * (PLAYER_ITEM_HEIGHT + ITEM_GAP);
-			
-			if (y < area.top() - PLAYER_ITEM_HEIGHT || y > area.bottom()) continue;
-			
+			int y = startY + (i - scrollOffset) * PLAYER_ITEM_HEIGHT;
+
+			if (y + PLAYER_ITEM_HEIGHT <= area.top() || y >= area.bottom()) continue;
+
 			boolean isPending = isPendingSpawn(playerName);
+			boolean isSelected = playerName.equals(selectedPlayer);
 			TimedTaskManager.TimedTask task = TimedTaskManager.getTask(playerName);
-			
-			if (!isPending) {
+
+			int faceY = y + faceVertOffset;
+
+			if (isPending) {
+				guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0x5055FF55);
+				guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + 1, 0xFF44BB44);
+				guiGraphics.fill(faceX, faceY + FACE_SIZE - 1, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF44BB44);
+				guiGraphics.fill(faceX, faceY, faceX + 1, faceY + FACE_SIZE, 0xFF44BB44);
+				guiGraphics.fill(faceX + FACE_SIZE - 1, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF44BB44);
+				guiGraphics.drawCenteredString(mc.font, "+", faceX + FACE_SIZE / 2, faceY + (FACE_SIZE - 9) / 2, 0xFF55FF55);
+			} else {
 				PlayerInfo playerInfo = getPlayerInfo(playerName);
 				if (playerInfo != null) {
 					PlayerSkin skin = playerInfo.getSkin();
-					int faceX = playerListX + 2;
-					int faceY = y + (PLAYER_ITEM_HEIGHT - FACE_SIZE) / 2;
 					PlayerFaceRenderer.draw(guiGraphics, skin, faceX, faceY, FACE_SIZE);
+				} else {
+					guiGraphics.fill(faceX, faceY, faceX + FACE_SIZE, faceY + FACE_SIZE, 0xFF3A3A3A);
 				}
-				// Small red indicator in corner when a kill task is pending
 				if (task != null && task.type == TimedTaskManager.TaskType.KILL) {
-					guiGraphics.fill(playerListX + 14, y + 2, playerListX + 18, y + 6, 0xCCFF3333);
+					guiGraphics.fill(faceX + FACE_SIZE - 4, faceY, faceX + FACE_SIZE, faceY + 4, 0xFFFF4444);
+					guiGraphics.fill(faceX + FACE_SIZE - 3, faceY + 1, faceX + FACE_SIZE - 1, faceY + 3, 0xFFFF8888);
 				}
-			} else {
-				// Pending spawn: green box icon with "+" symbol
-				guiGraphics.fill(playerListX + 2, y + 2, playerListX + 18, y + 18, 0x4455FF55);
-				guiGraphics.drawCenteredString(mc.font, "+", playerListX + 10, y + 5, 0xFF55FF55);
 			}
-			
+
+			int timerWidth = 0;
 			if (task != null) {
 				String timeStr = formatTime(task.getRemainingSeconds());
-				int timeColor = task.type == TimedTaskManager.TaskType.SPAWN ? 0xFF55FF55 : 0xFFFF5555;
-				int timeWidth = mc.font.width(timeStr);
-				guiGraphics.drawString(mc.font, timeStr, playerListX + PLAYER_ITEM_WIDTH - timeWidth - 4, y + 6, timeColor);
+				timerWidth = mc.font.width(timeStr) + 6;
+				int timeColor = task.type == TimedTaskManager.TaskType.SPAWN ? 0xFF44EE44 : 0xFFFF6644;
+				guiGraphics.drawString(mc.font, timeStr,
+						playerListX + PLAYER_ITEM_WIDTH - timerWidth + 2,
+						y + textVertOffset, timeColor);
 			}
-			
-			if (playerName.equals(selectedPlayer)) {
-				guiGraphics.fill(playerListX, y, playerListX + PLAYER_ITEM_WIDTH, y + 1, 0xFF55FF55);
-				guiGraphics.fill(playerListX, y + PLAYER_ITEM_HEIGHT - 1, playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, 0xFF55FF55);
-				guiGraphics.fill(playerListX, y, playerListX + 1, y + PLAYER_ITEM_HEIGHT, 0xFF55FF55);
-				guiGraphics.fill(playerListX + PLAYER_ITEM_WIDTH - 1, y, playerListX + PLAYER_ITEM_WIDTH, y + PLAYER_ITEM_HEIGHT, 0xFF55FF55);
-			}
+
+			int maxNameWidth = playerListX + PLAYER_ITEM_WIDTH - nameX - timerWidth - 2;
+			String displayName = mc.font.plainSubstrByWidth(playerName, maxNameWidth);
+			int nameColor = isPending ? 0xFF88EE88 : isSelected ? 0xFFEEFFEE : 0xFFCCCCCC;
+			guiGraphics.drawString(mc.font, displayName, nameX, y + textVertOffset, nameColor);
 		}
 	}
 	

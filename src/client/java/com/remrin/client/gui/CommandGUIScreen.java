@@ -49,6 +49,7 @@ public class CommandGUIScreen extends Screen {
 	
 	private Tab lastTab = null;
 	private ScreenRectangle tabArea;
+	private ScreenRectangle fakePlayerArea;
 	private int fakePlayerRefreshTicks = 0;
 	private static final int REFRESH_INTERVAL = 10;
 
@@ -171,7 +172,13 @@ public class CommandGUIScreen extends Screen {
 		);
 		this.tabManager.setTabArea(tabArea);
 		this.customTab.doLayout(tabArea);
-		this.fakePlayerTab.doLayout(tabArea);
+		fakePlayerArea = new ScreenRectangle(
+				PADDING,
+				tabBarBottom + 4,
+				this.width - PADDING * 2 - SCROLLBAR_WIDTH - 2,
+				this.height - (tabBarBottom + 4) - 4
+		);
+		this.fakePlayerTab.doLayout(fakePlayerArea);
 		for (PresetCommandTab tab : presetTabs) {
 			tab.doLayout(tabArea);
 		}
@@ -246,7 +253,13 @@ public class CommandGUIScreen extends Screen {
 			Tab currentTab = tabManager.getCurrentTab();
 			removeTabButtons(currentTab);
 			customTab.doLayout(tabArea);
-			fakePlayerTab.doLayout(tabArea);
+			fakePlayerArea = new ScreenRectangle(
+					PADDING,
+					tabBarBottom + 4,
+					this.width - PADDING * 2 - SCROLLBAR_WIDTH - 2,
+					this.height - (tabBarBottom + 4) - 4
+			);
+			fakePlayerTab.doLayout(fakePlayerArea);
 			for (PresetCommandTab tab : presetTabs) {
 				tab.doLayout(tabArea);
 			}
@@ -399,27 +412,9 @@ public class CommandGUIScreen extends Screen {
 				}
 			}
 		} else if (currentTab == fakePlayerTab) {
-			fakePlayerTab.render(guiGraphics);
+			fakePlayerTab.render(guiGraphics, mouseX, mouseY);
 			fakePlayerTab.renderFaces(guiGraphics);
 			fakePlayerTab.renderScrollbar(guiGraphics);
-			
-			int tabBarBottom = this.tabNavigationBar.getRectangle().bottom();
-			if (fakePlayerTab.isEmpty()) {
-				ScreenRectangle area = fakePlayerTab.getArea();
-				if (area != null) {
-					guiGraphics.drawCenteredString(this.font,
-							Component.translatable("screen.command-gui.fakeplayer.empty"),
-							this.width / 2, area.top() + area.height() / 2 - 4, 0xFF888888);
-				}
-			} else if (fakePlayerTab.getSelectedPlayer() == null) {
-				guiGraphics.drawCenteredString(this.font,
-						Component.translatable("screen.command-gui.fakeplayer.select_hint"),
-						this.width / 2, tabBarBottom + 8, 0xFF888888);
-			} else {
-				guiGraphics.drawCenteredString(this.font,
-						Component.translatable("screen.command-gui.fakeplayer.selected", fakePlayerTab.getSelectedPlayer()),
-						this.width / 2, tabBarBottom + 8, 0xFF55FF55);
-			}
 		} else {
 			for (PresetCommandTab presetTab : presetTabs) {
 				if (currentTab == presetTab) {
