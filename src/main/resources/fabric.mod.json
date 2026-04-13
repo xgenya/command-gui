@@ -10,7 +10,7 @@
 	"contact": {
 		"sources": "https://github.com/remrin/command-gui"
 	},
-	"license": "MIT",
+	"license": "GPL-3.0",
 	"icon": "assets/command-gui/icon.png",
 	"environment": "*",
 	"entrypoints": {
@@ -19,6 +19,9 @@
 		],
 		"client": [
 			"com.remrin.client.CommandGUIClient"
+		],
+		"modmenu": [
+			"com.remrin.client.ModMenuIntegration"
 		]
 	},
 	"mixins": [
@@ -33,5 +36,8 @@
 		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
 	}
 }

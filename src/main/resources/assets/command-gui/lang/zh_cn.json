@@ -1,4 +1,5 @@
 {
+	"modmenu.descriptionTranslation.command-gui": "一个简单的指令 GUI 模组，用于快速执行命令。支持带占位符的自定义命令（玩家选择、文本输入、数字输入、坐标输入），预设的原版和 Carpet Mod 命令组，以及分类命令管理。",
 	"key.category.command-gui.general": "Command-GUI",
 	"key.command-gui.open_gui": "打开界面",
 	"screen.command-gui.title": "Command-GUI",

@@ -1,4 +1,5 @@
 {
+	"modmenu.descriptionTranslation.command-gui": "A simple GUI mod for quickly executing commands. Supports custom commands with placeholders (player selection, text input, number input, coordinate input), preset command groups for Vanilla and Carpet Mod, and categorized command management.",
 	"key.category.command-gui.general": "Command-GUI",
 	"key.command-gui.open_gui": "Open GUI",
 	"screen.command-gui.title": "Command-GUI",

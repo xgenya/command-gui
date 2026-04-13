@@ -8,6 +8,7 @@ group = project.maven_group
 
 repositories {
 	maven { url "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1" }
+	maven { url "https://maven.terraformersmc.com/releases/" }
 }
 
 loom {
@@ -35,6 +36,9 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Mod Menu support (optional)
+	modCompileOnly "com.terraformersmc:modmenu:17.0.0"
 
 	modRuntimeOnly "me.djtheredstoner:DevAuth-fabric:1.2.2"
 }
