@@ -3,6 +3,7 @@ package com.remrin.client.gui;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.PlayerFaceRenderer;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -40,6 +41,8 @@ public class FakePlayerTab implements Tab {
 	private final List<Button> playerButtons = new ArrayList<>();
 	private final List<Button> actionButtons = new ArrayList<>();
 	private final List<Button> batchButtons = new ArrayList<>();
+	private final List<Button> modeButtons = new ArrayList<>();
+	private final List<EditBox> intervalFields = new ArrayList<>();
 	private final List<String> displayList = new ArrayList<>();
 	
 	private ScreenRectangle area;
@@ -47,6 +50,8 @@ public class FakePlayerTab implements Tab {
 	private String searchText = "";
 	private String selectedPlayer = null;
 	private int separatorX = 0;
+	
+	private int intervalTicks = 20;
 	
 	private Runnable onBeforeRebuild;
 	private Runnable onAfterRebuild;
@@ -90,6 +95,8 @@ public class FakePlayerTab implements Tab {
 		playerButtons.forEach(consumer);
 		actionButtons.forEach(consumer);
 		batchButtons.forEach(consumer);
+		modeButtons.forEach(consumer);
+		intervalFields.forEach(consumer);
 	}
 
 	@Override
@@ -103,6 +110,8 @@ public class FakePlayerTab implements Tab {
 		playerButtons.clear();
 		actionButtons.clear();
 		batchButtons.clear();
+		modeButtons.clear();
+		intervalFields.clear();
 		displayList.clear();
 		
 		for (TimedTaskManager.TimedTask task : TimedTaskManager.getPendingSpawnTasks()) {
@@ -169,15 +178,15 @@ public class FakePlayerTab implements Tab {
 	}
 	
 	private boolean isPendingSpawn(String name) {
-		return TimedTaskManager.getTask(name) != null && 
-			   TimedTaskManager.getTask(name).type == TimedTaskManager.TaskType.SPAWN;
+		TimedTaskManager.TimedTask task = TimedTaskManager.getTask(name);
+		return task != null && task.type == TimedTaskManager.TaskType.SPAWN;
 	}
 	
 	private boolean isOnlineFakePlayer(String name) {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.getConnection() != null) {
 			for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-				if (info.getProfile().name().equals(name) && isFakePlayer(name)) {
+				if (info.getProfile().name().equals(name) && CommandHelper.isFakePlayer(info)) {
 					return true;
 				}
 			}
@@ -212,9 +221,12 @@ public class FakePlayerTab implements Tab {
 	private void rebuildActionButtons() {
 		actionButtons.clear();
 		batchButtons.clear();
+		modeButtons.clear();
+		intervalFields.clear();
 		
 		if (area == null) return;
 		
+		Minecraft mc = Minecraft.getInstance();
 		int rightX = separatorX + 20;
 		int startY = area.top();
 		int actionCols = 2;
@@ -230,10 +242,20 @@ public class FakePlayerTab implements Tab {
 			Button killAllBtn = Button.builder(
 					Component.literal("x ").withStyle(ChatFormatting.RED)
 							.append(Component.translatable("screen.command-gui.fakeplayer.killall").withStyle(ChatFormatting.WHITE)),
-					b -> killAllFakePlayers()
+					b -> {
+						long handle = org.lwjgl.glfw.GLFW.glfwGetCurrentContext();
+						if (org.lwjgl.glfw.GLFW.glfwGetKey(handle, org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS
+								|| org.lwjgl.glfw.GLFW.glfwGetKey(handle, org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT) == org.lwjgl.glfw.GLFW.GLFW_PRESS) {
+							killAllFakePlayers();
+							fireBeforeRebuild();
+							rebuildActionButtons();
+							fireAfterRebuild();
+						}
+					}
 			).bounds(rightX + ACTION_BUTTON_WIDTH + ITEM_GAP, startY, ACTION_BUTTON_WIDTH, ACTION_BUTTON_HEIGHT).build();
+			killAllBtn.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+					Component.translatable("screen.command-gui.fakeplayer.killall.shift_hint")));
 			batchButtons.add(killAllBtn);
-
 			Button timedSpawnBtn = Button.builder(
 					Component.literal("+ ").withStyle(ChatFormatting.YELLOW)
 							.append(Component.translatable("screen.command-gui.fakeplayer.timed.spawn.short").withStyle(ChatFormatting.WHITE)),
@@ -263,6 +285,8 @@ public class FakePlayerTab implements Tab {
 		TimedTaskManager.TimedTask killTask = TimedTaskManager.getTask(selectedPlayer);
 		boolean hasKillTask = killTask != null && killTask.type == TimedTaskManager.TaskType.KILL;
 		
+		String player = selectedPlayer;
+		
 		int idx = 0;
 		for (int i = 0; i < ACTIONS.length; i++) {
 			if (i == 1 && hasKillTask) continue;
@@ -274,7 +298,6 @@ public class FakePlayerTab implements Tab {
 			int y = startY + row * (ACTION_BUTTON_HEIGHT + ITEM_GAP);
 			
 			String action = ACTIONS[i];
-			String player = selectedPlayer;
 			
 			Button btn = Button.builder(
 					Component.translatable(ACTION_KEYS[i]),
@@ -285,8 +308,35 @@ public class FakePlayerTab implements Tab {
 			idx++;
 		}
 		
-		int timedKillRow = (idx + 1) / actionCols;
-		int timedKillY = startY + timedKillRow * (ACTION_BUTTON_HEIGHT + ITEM_GAP) + 10;
+		// Interval row: [ticks input] [attack interval] [use interval]
+		int intervalRowY = startY + ((idx + 1) / actionCols) * (ACTION_BUTTON_HEIGHT + ITEM_GAP) + 6;
+		int intervalFieldW = 50;
+		int intervalBtnW = 55;
+		int gap = 4;
+		
+		EditBox ticksField = new EditBox(mc.font, rightX, intervalRowY, intervalFieldW, ACTION_BUTTON_HEIGHT, Component.literal("ticks"));
+		ticksField.setMaxLength(5);
+		ticksField.setValue(String.valueOf(intervalTicks));
+		ticksField.setHint(Component.literal("ticks"));
+		ticksField.setFilter(s -> s.isEmpty() || s.matches("\\d*"));
+		ticksField.setResponder(s -> {
+			try { intervalTicks = s.isEmpty() ? 20 : Integer.parseInt(s); } catch (NumberFormatException e) { intervalTicks = 20; }
+		});
+		intervalFields.add(ticksField);
+		
+		Button attackIntervalBtn = Button.builder(
+				Component.translatable("screen.command-gui.fakeplayer.action.attack_interval"),
+				b -> executeAction(player, "attack interval " + intervalTicks)
+		).bounds(rightX + intervalFieldW + gap, intervalRowY, intervalBtnW, ACTION_BUTTON_HEIGHT).build();
+		actionButtons.add(attackIntervalBtn);
+		
+		Button useIntervalBtn = Button.builder(
+				Component.translatable("screen.command-gui.fakeplayer.action.use_interval"),
+				b -> executeAction(player, "use interval " + intervalTicks)
+		).bounds(rightX + intervalFieldW + gap + intervalBtnW + gap, intervalRowY, intervalBtnW, ACTION_BUTTON_HEIGHT).build();
+		actionButtons.add(useIntervalBtn);
+		
+		int timedKillY = intervalRowY + ACTION_BUTTON_HEIGHT + ITEM_GAP + 6;
 		
 		if (hasKillTask) {
 			Button cancelKillBtn = Button.builder(
@@ -480,18 +530,7 @@ public class FakePlayerTab implements Tab {
 	}
 	
 	private String formatTime(int seconds) {
-		if (seconds >= 3600) {
-			int h = seconds / 3600;
-			int m = (seconds % 3600) / 60;
-			int s = seconds % 60;
-			return String.format("%d:%02d:%02d", h, m, s);
-		} else if (seconds >= 60) {
-			int m = seconds / 60;
-			int s = seconds % 60;
-			return String.format("%d:%02d", m, s);
-		} else {
-			return seconds + "s";
-		}
+		return CommandHelper.formatTime(seconds);
 	}
 	
 	private PlayerInfo getPlayerInfo(String name) {
@@ -507,32 +546,13 @@ public class FakePlayerTab implements Tab {
 	}
 	
 	private boolean isFakePlayer(String name) {
-		Minecraft mc = Minecraft.getInstance();
-		if (mc.player != null && name.equals(mc.player.getName().getString())) {
-			return false;
-		}
-		
-		if (mc.getConnection() != null) {
-			for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-				if (info.getProfile().name().equals(name)) {
-					int ping = info.getLatency();
-					if (ping == 0) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
+		return CommandHelper.isFakePlayer(name);
 	}
 	
 	private void executeCommand(String command) {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.player != null) {
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendCommand(command);
-			}
+			CommandHelper.sendCommand(command);
 		}
 		if (!CommandGUIScreen.shouldKeepOpen()) {
 			mc.setScreen(null);
@@ -576,7 +596,12 @@ public class FakePlayerTab implements Tab {
 		all.addAll(playerButtons);
 		all.addAll(actionButtons);
 		all.addAll(batchButtons);
+		all.addAll(modeButtons);
 		return all;
+	}
+	
+	public List<EditBox> getIntervalFields() {
+		return intervalFields;
 	}
 	
 	public List<Button> getPlayerButtons() {

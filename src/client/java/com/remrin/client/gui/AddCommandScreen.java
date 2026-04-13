@@ -128,9 +128,18 @@ public class AddCommandScreen extends BaseCommandEditorScreen {
 	@Override
 	protected void performSave() {
 		String name = nameField.getValue().trim();
-		String command = commandField.getValue().trim();
 		String description = descriptionField.getValue().trim();
 		String categoryId = categories.isEmpty() ? "default" : categories.get(selectedCategoryIndex).id;
-		CommandConfig.addCommand(categoryId, name, command, description);
+		List<String> commands = getAllCommands();
+		if (commands.size() > 1) {
+			CommandConfig.addCommandMulti(categoryId, name, commands, description);
+		} else if (!commands.isEmpty()) {
+			CommandConfig.addCommand(categoryId, name, commands.get(0), description);
+		}
+	}
+
+	@Override
+	protected boolean hasExtraRow() {
+		return categories.size() > 1;
 	}
 }

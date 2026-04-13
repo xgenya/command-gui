@@ -46,6 +46,8 @@ public class TimedTaskManager {
 									Double x, Double y, Double z) {
 		int totalTicks = (hours * 3600 + minutes * 60 + seconds) * 20;
 		if (totalTicks > 0) {
+			// Remove any existing task for this player before adding a new one
+			removeTask(playerName);
 			pendingTasks.add(new TimedTask(TaskType.SPAWN, playerName, totalTicks, x, y, z));
 		}
 	}
@@ -53,6 +55,8 @@ public class TimedTaskManager {
 	public static void addKillTask(String playerName, int hours, int minutes, int seconds) {
 		int totalTicks = (hours * 3600 + minutes * 60 + seconds) * 20;
 		if (totalTicks > 0) {
+			// Remove any existing task for this player before adding a new one
+			removeTask(playerName);
 			pendingTasks.add(new TimedTask(TaskType.KILL, playerName, totalTicks));
 		}
 	}

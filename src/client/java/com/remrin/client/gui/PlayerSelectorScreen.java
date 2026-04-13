@@ -29,7 +29,7 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
 	}
 
 	private static boolean isFakePlayer(PlayerInfo playerInfo) {
-		return playerInfo.getLatency() == 0;
+		return CommandHelper.isFakePlayer(playerInfo);
 	}
 
 	private final String commandTemplate;

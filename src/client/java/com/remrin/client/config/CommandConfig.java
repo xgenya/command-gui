@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.remrin.CommandGUI;
+import com.remrin.client.gui.CommandHelper;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
@@ -56,6 +57,7 @@ public class CommandConfig {
 
 	public static class CommandEntry {
 		public String command;
+		public List<String> commands;
 		public String description;
 
 		public CommandEntry() {}
@@ -65,16 +67,24 @@ public class CommandConfig {
 			this.description = description != null ? description : "";
 		}
 
+		public CommandEntry(List<String> commands, String description) {
+			this.commands = commands;
+			this.command = commands != null && !commands.isEmpty() ? commands.get(0) : "";
+			this.description = description != null ? description : "";
+		}
+
+		public List<String> getCommands() {
+			if (commands != null && !commands.isEmpty()) {
+				return commands;
+			}
+			if (command != null && !command.isEmpty()) {
+				return List.of(command);
+			}
+			return List.of();
+		}
+
 		public boolean hasPlaceholders() {
-			return command != null && (
-				command.contains("{player_all}") ||
-				command.contains("{player}") ||
-				command.contains("{player_fake}") ||
-				command.contains("{name}") ||
-				command.contains("{number}") ||
-				command.contains("{coords}") ||
-				command.contains("{x}")
-			);
+			return CommandHelper.hasPlaceholders(getCommands());
 		}
 	}
 
@@ -185,6 +195,15 @@ public class CommandConfig {
 		save();
 	}
 
+	public static void addCommandMulti(String categoryId, String name, List<String> commands, String description) {
+		Category cat = getCategory(categoryId);
+		if (cat == null) {
+			cat = getDefaultCategory();
+		}
+		cat.commands.put(name, new CommandEntry(commands, description));
+		save();
+	}
+
 	public static void removeCommand(String name) {
 		for (Category cat : configData.categories) {
 			if (cat.commands.remove(name) != null) {
@@ -198,6 +217,16 @@ public class CommandConfig {
 		for (Category cat : configData.categories) {
 			if (cat.commands.containsKey(name)) {
 				cat.commands.put(name, new CommandEntry(command, description));
+				save();
+				return;
+			}
+		}
+	}
+
+	public static void updateCommandMulti(String name, List<String> commands, String description) {
+		for (Category cat : configData.categories) {
+			if (cat.commands.containsKey(name)) {
+				cat.commands.put(name, new CommandEntry(commands, description));
 				save();
 				return;
 			}

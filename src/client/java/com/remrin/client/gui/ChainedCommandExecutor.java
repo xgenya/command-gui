@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ChainedCommandExecutor {
 	
@@ -43,6 +45,11 @@ public class ChainedCommandExecutor {
 			return this;
 		}
 	}
+
+	/** Pattern matching all placeholder tokens for type identification. */
+	private static final Pattern PARSE_PATTERN = Pattern.compile(
+		"\\{(player_all|player_fake|player|name|number|time|coords|x)\\}"
+	);
 	
 	private final Screen parent;
 	private String currentCommand;
@@ -62,70 +69,27 @@ public class ChainedCommandExecutor {
 	}
 	
 	private void parseTypes(String command) {
-		int index = 0;
-		while (index < command.length()) {
-			int playerAllIdx = command.indexOf("{player_all}", index);
-			int playerOtherIdx = command.indexOf("{player}", index);
-			int playerFakeIdx = command.indexOf("{player_fake}", index);
-			int nameIdx = command.indexOf("{name}", index);
-			int numberIdx = command.indexOf("{number}", index);
-			int timeIdx = command.indexOf("{time}", index);
-			int coordsIdx = command.indexOf("{coords}", index);
-			int xIdx = command.indexOf("{x}", index);
-			
-			int minIdx = Integer.MAX_VALUE;
-			PlaceholderType minType = null;
-			int skipLen = 0;
-			
-			if (playerAllIdx >= 0 && playerAllIdx < minIdx) {
-				minIdx = playerAllIdx;
-				minType = PlaceholderType.PLAYER_ALL;
-				skipLen = "{player_all}".length();
-			}
-			if (playerFakeIdx >= 0 && playerFakeIdx < minIdx) {
-				minIdx = playerFakeIdx;
-				minType = PlaceholderType.PLAYER_FAKE;
-				skipLen = "{player_fake}".length();
-			}
-			if (playerOtherIdx >= 0 && playerOtherIdx < minIdx) {
-				if (minType != PlaceholderType.PLAYER_ALL && minType != PlaceholderType.PLAYER_FAKE) {
-					minIdx = playerOtherIdx;
-					minType = PlaceholderType.PLAYER_OTHER;
-					skipLen = "{player}".length();
+		Matcher matcher = PARSE_PATTERN.matcher(command);
+		while (matcher.find()) {
+			String token = matcher.group(1);
+			PlaceholderType type = switch (token) {
+				case "player_all"  -> PlaceholderType.PLAYER_ALL;
+				case "player_fake" -> PlaceholderType.PLAYER_FAKE;
+				case "player"      -> PlaceholderType.PLAYER_OTHER;
+				case "name"        -> PlaceholderType.NAME;
+				case "number"      -> PlaceholderType.NUMBER;
+				case "time"        -> PlaceholderType.TIME;
+				case "coords", "x" -> PlaceholderType.COORDS;
+				default -> null;
+			};
+			if (type != null) {
+				// {x}, {y}, {z} all map to a single COORDS input; skip consecutive COORDS entries
+				if (type == PlaceholderType.COORDS && !pendingTypes.isEmpty()
+						&& pendingTypes.get(pendingTypes.size() - 1) == PlaceholderType.COORDS) {
+					continue;
 				}
+				pendingTypes.add(type);
 			}
-			if (nameIdx >= 0 && nameIdx < minIdx) {
-				minIdx = nameIdx;
-				minType = PlaceholderType.NAME;
-				skipLen = "{name}".length();
-			}
-			if (numberIdx >= 0 && numberIdx < minIdx) {
-				minIdx = numberIdx;
-				minType = PlaceholderType.NUMBER;
-				skipLen = "{number}".length();
-			}
-			if (timeIdx >= 0 && timeIdx < minIdx) {
-				minIdx = timeIdx;
-				minType = PlaceholderType.TIME;
-				skipLen = "{time}".length();
-			}
-			if (coordsIdx >= 0 && coordsIdx < minIdx) {
-				minIdx = coordsIdx;
-				minType = PlaceholderType.COORDS;
-				skipLen = "{coords}".length();
-			}
-			if (xIdx >= 0 && xIdx < minIdx) {
-				minIdx = xIdx;
-				minType = PlaceholderType.COORDS;
-				skipLen = "{x}".length();
-			}
-			
-			if (minType == null) {
-				break;
-			}
-			
-			pendingTypes.add(minType);
-			index = minIdx + skipLen;
 		}
 	}
 	
@@ -263,12 +227,9 @@ public class ChainedCommandExecutor {
 	private void executeCommand() {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc != null && mc.player != null) {
-			String command = currentCommand;
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendChat(command);
-			}
+			CommandHelper.sendCommand(currentCommand);
+			
+			onExecutionComplete();
 			
 			if (!CommandGUIScreen.shouldKeepOpen()) {
 				if (parent != null) {
@@ -279,29 +240,17 @@ public class ChainedCommandExecutor {
 			}
 		}
 	}
+
+	protected void onExecutionComplete() {
+		// Hook for subclasses to execute additional commands after the main command
+	}
 	
 	public static void sendCommand(String command) {
-		Minecraft mc = Minecraft.getInstance();
-		if (mc != null && mc.player != null) {
-			if (command.startsWith("/")) {
-				mc.player.connection.sendCommand(command.substring(1));
-			} else {
-				mc.player.connection.sendChat(command);
-			}
-		}
+		CommandHelper.sendCommand(command);
 	}
 
 	public static boolean hasPlaceholders(String command) {
-		return command != null && (
-			command.contains("{player_all}") ||
-			command.contains("{player}") ||
-			command.contains("{player_fake}") ||
-			command.contains("{name}") ||
-			command.contains("{number}") ||
-			command.contains("{time}") ||
-			command.contains("{coords}") ||
-			command.contains("{x}")
-		);
+		return CommandHelper.hasPlaceholders(command);
 	}
 	
 	public static void execute(Screen parent, String command) {
@@ -309,16 +258,12 @@ public class ChainedCommandExecutor {
 	}
 	
 	public static void execute(Screen parent, String command, Config config) {
-		if (hasPlaceholders(command)) {
+		if (CommandHelper.hasPlaceholders(command)) {
 			new ChainedCommandExecutor(parent, command, config).start();
 		} else {
 			Minecraft mc = Minecraft.getInstance();
 			if (mc != null && mc.player != null) {
-				if (command.startsWith("/")) {
-					mc.player.connection.sendCommand(command.substring(1));
-				} else {
-					mc.player.connection.sendChat(command);
-				}
+				CommandHelper.sendCommand(command);
 				
 				if (!CommandGUIScreen.shouldKeepOpen()) {
 					if (parent != null) {
@@ -327,6 +272,97 @@ public class ChainedCommandExecutor {
 				} else {
 					mc.setScreen(parent);
 				}
+			}
+		}
+	}
+
+	public static void executeMulti(Screen parent, List<String> commands) {
+		executeMulti(parent, commands, Config.defaultConfig());
+	}
+
+	public static void executeMulti(Screen parent, List<String> commands, Config config) {
+		if (commands == null || commands.isEmpty()) return;
+		if (commands.size() == 1) {
+			execute(parent, commands.get(0), config);
+			return;
+		}
+		// Execute first command with placeholder support, then remaining commands directly
+		String first = commands.get(0);
+		List<String> rest = commands.subList(1, commands.size());
+		boolean needsDelay = CommandHelper.isFakePlayerSpawnCommand(first) && !rest.isEmpty();
+		if (CommandHelper.hasPlaceholders(first)) {
+			new ChainedCommandExecutor(parent, first, config) {
+				@Override
+				protected void onExecutionComplete() {
+					if (needsDelay) {
+						scheduleDelayed(new ArrayList<>(rest), 0);
+					} else {
+						for (String cmd : rest) {
+							CommandHelper.sendCommand(cmd);
+						}
+					}
+				}
+			}.start();
+		} else {
+			Minecraft mc = Minecraft.getInstance();
+			if (mc != null && mc.player != null) {
+				CommandHelper.sendCommand(first);
+				if (needsDelay) {
+					scheduleDelayed(new ArrayList<>(rest), 0);
+				} else {
+					for (String cmd : rest) {
+						CommandHelper.sendCommand(cmd);
+					}
+				}
+				if (!CommandGUIScreen.shouldKeepOpen()) {
+					if (parent != null) {
+						parent.onClose();
+					}
+				} else {
+					mc.setScreen(parent);
+				}
+			}
+		}
+	}
+
+	// --- Delayed command execution queue ---
+	private static final int SPAWN_DELAY_TICKS = 20; // 1 second delay after spawn
+	private static final List<DelayedBatch> delayedQueue = new ArrayList<>();
+
+	private static class DelayedBatch {
+		final List<String> commands;
+		int remainingTicks;
+
+		DelayedBatch(List<String> commands, int delayTicks) {
+			this.commands = commands;
+			this.remainingTicks = delayTicks;
+		}
+	}
+
+	/**
+	 * Schedule commands to execute after a delay (in ticks).
+	 * Used to ensure fake player spawn completes before running actions.
+	 */
+	private static void scheduleDelayed(List<String> commands, int extraDelay) {
+		delayedQueue.add(new DelayedBatch(commands, SPAWN_DELAY_TICKS + extraDelay));
+	}
+
+	/**
+	 * Called every client tick to process delayed command batches.
+	 * Must be registered in the client tick event handler.
+	 */
+	public static void tickDelayed() {
+		if (delayedQueue.isEmpty()) return;
+
+		java.util.Iterator<DelayedBatch> it = delayedQueue.iterator();
+		while (it.hasNext()) {
+			DelayedBatch batch = it.next();
+			batch.remainingTicks--;
+			if (batch.remainingTicks <= 0) {
+				for (String cmd : batch.commands) {
+					CommandHelper.sendCommand(cmd);
+				}
+				it.remove();
 			}
 		}
 	}

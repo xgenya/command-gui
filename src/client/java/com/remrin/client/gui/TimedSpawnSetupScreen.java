@@ -172,13 +172,7 @@ public class TimedSpawnSetupScreen extends BaseParentedScreen<Screen> {
 	}
 
 	private String formatDuration(int totalSeconds) {
-		if (totalSeconds <= 0) return "--";
-		int h = totalSeconds / 3600;
-		int m = (totalSeconds % 3600) / 60;
-		int s = totalSeconds % 60;
-		if (h > 0) return String.format("%dh %02dm %02ds", h, m, s);
-		if (m > 0) return String.format("%dm %02ds", m, s);
-		return s + "s";
+		return CommandHelper.formatDuration(totalSeconds);
 	}
 
 	@Override

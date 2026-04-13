@@ -1,6 +1,5 @@
 package com.remrin.client.gui;
 
-import com.remrin.client.config.CommandConfig;
 import com.remrin.client.config.PresetConfig;
 import com.remrin.client.config.SettingsConfig;
 import net.minecraft.client.gui.GuiGraphics;
@@ -21,9 +20,6 @@ public class CommandGUIScreen extends Screen {
 	private static final int FOOTER_HEIGHT = 33;
 	private static final int PADDING = 10;
 	private static final int SCROLLBAR_WIDTH = 6;
-	private static final int CONTEXT_MENU_WIDTH = 80;
-	private static final int CONTEXT_MENU_HEIGHT = 40;
-	private static final int CONTEXT_MENU_ITEM_HEIGHT = 20;
 
 	private static int lastSelectedTabIndex = 0;
 	private static boolean keepOpenAfterExecute = false;
@@ -37,16 +33,12 @@ public class CommandGUIScreen extends Screen {
 
 	private EditBox searchField;
 	private Button addButton;
+	private Button addFakePlayerButton;
 	private Button closeButton;
 	private Checkbox keepOpenCheckbox;
 	private SettingsButton settingsButton;
 	private String searchText = "";
 
-	private String contextMenuName = null;
-	private CommandConfig.CommandEntry contextMenuEntry = null;
-	private int contextMenuX = 0;
-	private int contextMenuY = 0;
-	
 	private Tab lastTab = null;
 	private ScreenRectangle tabArea;
 	private ScreenRectangle fakePlayerArea;
@@ -71,8 +63,6 @@ public class CommandGUIScreen extends Screen {
 		super.init();
 
 		currentInstance = this;
-		this.contextMenuName = null;
-		this.contextMenuEntry = null;
 
 		this.tabManager = new TabManager(w -> {}, w -> {});
 		
@@ -123,10 +113,21 @@ public class CommandGUIScreen extends Screen {
 		this.tabNavigationBar.arrangeElements();
 		
 		int tabBarBottom = this.tabNavigationBar.getRectangle().bottom();
-		int searchY = tabBarBottom + 5;
-		int searchWidth = this.width - PADDING * 2 - 30;
 
-		searchField = new EditBox(this.font, PADDING, searchY, searchWidth, 20,
+		int closeBtnY = this.height - FOOTER_HEIGHT + 6;
+
+		// Keep-open checkbox: far left
+		keepOpenCheckbox = Checkbox.builder(
+				Component.translatable("screen.command-gui.keep_open"),
+				this.font
+		).pos(PADDING, closeBtnY).selected(keepOpenAfterExecute).build();
+		this.addRenderableWidget(keepOpenCheckbox);
+
+		// Search bar + add buttons: centered
+		int searchWidth = 90;
+		int searchGroupWidth = searchWidth + 2 + 20 + 2 + 20; // 134
+		int searchGroupX = this.width / 2 - searchGroupWidth / 2;
+		searchField = new EditBox(this.font, searchGroupX, closeBtnY, searchWidth, 20,
 				Component.translatable("screen.command-gui.search_hint"));
 		searchField.setHint(Component.translatable("screen.command-gui.search_hint"));
 		searchField.setMaxLength(50);
@@ -137,46 +138,54 @@ public class CommandGUIScreen extends Screen {
 		addButton = Button.builder(
 				Component.translatable("screen.command-gui.add"),
 				button -> this.minecraft.setScreen(new AddCommandScreen(this, customTab.getSelectedCategoryId()))
-		).bounds(PADDING + searchWidth + 5, searchY, 20, 20).build();
+		).bounds(searchGroupX + searchWidth + 2, closeBtnY, 20, 20).build();
 		this.addRenderableWidget(addButton);
 
-		int closeBtnY = this.height - FOOTER_HEIGHT + 6;
+		addFakePlayerButton = Button.builder(
+				Component.literal("\uD83E\uDDD1"),
+				button -> this.minecraft.setScreen(new AddFakePlayerCommandScreen(this, customTab.getSelectedCategoryId()))
+		).bounds(searchGroupX + searchWidth + 24, closeBtnY, 20, 20).build();
+		addFakePlayerButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+				Component.translatable("screen.command-gui.add_fakeplayer_cmd")));
+		this.addRenderableWidget(addFakePlayerButton);
+
+		// Close button: far right
 		closeButton = Button.builder(
 				Component.translatable("screen.command-gui.close"),
 				button -> this.onClose()
-		).bounds(this.width / 2 + 30, closeBtnY, 60, 20).build();
+		).bounds(this.width - PADDING - 60, closeBtnY, 60, 20).build();
 		this.addRenderableWidget(closeButton);
 
-		keepOpenCheckbox = Checkbox.builder(
-				Component.translatable("screen.command-gui.keep_open"),
-				this.font
-		).pos(this.width / 2 - 120, closeBtnY).selected(keepOpenAfterExecute).build();
-		this.addRenderableWidget(keepOpenCheckbox);
-
+		// Settings button: hidden (functionality kept, entry hidden)
 		settingsButton = new SettingsButton(
 				this.width - PADDING - 20, closeBtnY,
 				20, 20,
 				btn -> this.minecraft.setScreen(new SettingsScreen(this))
 		);
+		settingsButton.visible = false;
+		settingsButton.active = false;
 		this.addRenderableWidget(settingsButton);
 
 		this.tabNavigationBar.selectTab(lastSelectedTabIndex, false);
 		
-		int listTop = searchY + 25;
+		int listTop = tabBarBottom + 4;
+		// Tab area now extends to the footer (no separate search bar row)
+		int tabAreaHeight = Math.max(20, this.height - FOOTER_HEIGHT - listTop - 2);
 		
 		tabArea = new ScreenRectangle(
 				PADDING, 
 				listTop, 
 				this.width - PADDING * 2 - SCROLLBAR_WIDTH - 2, 
-				this.height - listTop - FOOTER_HEIGHT
+				tabAreaHeight
 		);
 		this.tabManager.setTabArea(tabArea);
 		this.customTab.doLayout(tabArea);
+		int fpAreaHeight = Math.max(20, this.height - (tabBarBottom + 4) - 4);
 		fakePlayerArea = new ScreenRectangle(
 				PADDING,
 				tabBarBottom + 4,
 				this.width - PADDING * 2 - SCROLLBAR_WIDTH - 2,
-				this.height - (tabBarBottom + 4) - 4
+				fpAreaHeight
 		);
 		this.fakePlayerTab.doLayout(fakePlayerArea);
 		for (PresetCommandTab tab : presetTabs) {
@@ -195,6 +204,7 @@ public class CommandGUIScreen extends Screen {
 			ct.getButtons().forEach(this::addRenderableWidget);
 		} else if (tab == fakePlayerTab) {
 			fakePlayerTab.getButtons().forEach(this::addRenderableWidget);
+			fakePlayerTab.getIntervalFields().forEach(this::addRenderableWidget);
 		}
 	}
 
@@ -205,22 +215,27 @@ public class CommandGUIScreen extends Screen {
 			ct.getButtons().forEach(this::removeWidget);
 		} else if (tab == fakePlayerTab) {
 			fakePlayerTab.getButtons().forEach(this::removeWidget);
+			fakePlayerTab.getIntervalFields().forEach(this::removeWidget);
 		}
 	}
 
 	/** Update visibility of widgets that depend on which tab is active. */
 	private void updateTabDependentWidgets(Tab tab) {
 		boolean isFakePlayerTab = (tab == fakePlayerTab);
+		boolean isCustomTab = (tab == customTab);
 		searchField.visible = !isFakePlayerTab;
 		searchField.active = !isFakePlayerTab;
-		addButton.visible = (tab == customTab);
-		addButton.active = (tab == customTab);
+		addButton.visible = isCustomTab;
+		addButton.active = isCustomTab;
+		addFakePlayerButton.visible = isCustomTab;
+		addFakePlayerButton.active = isCustomTab;
 		closeButton.visible = !isFakePlayerTab;
 		closeButton.active = !isFakePlayerTab;
 		keepOpenCheckbox.visible = !isFakePlayerTab;
 		keepOpenCheckbox.active = !isFakePlayerTab;
-		settingsButton.visible = !isFakePlayerTab;
-		settingsButton.active = !isFakePlayerTab;
+		// Settings button is always hidden (functionality kept via SettingsScreen)
+		settingsButton.visible = false;
+		settingsButton.active = false;
 	}
 
 	private void onSearchChanged(String text) {
@@ -240,24 +255,25 @@ public class CommandGUIScreen extends Screen {
 			this.tabNavigationBar.setWidth(this.width);
 			
 			int tabBarBottom = this.tabNavigationBar.getRectangle().bottom();
-			int searchY = tabBarBottom + 5;
-			int listTop = searchY + 25;
+			int listTop = tabBarBottom + 4;
+			int tabAreaHeight = Math.max(20, this.height - FOOTER_HEIGHT - listTop - 2);
 			
 			tabArea = new ScreenRectangle(
 					PADDING, 
 					listTop, 
 					this.width - PADDING * 2 - SCROLLBAR_WIDTH - 2, 
-					this.height - listTop - FOOTER_HEIGHT
+					tabAreaHeight
 			);
 			
 			Tab currentTab = tabManager.getCurrentTab();
 			removeTabButtons(currentTab);
 			customTab.doLayout(tabArea);
+			int fpAreaHeight = Math.max(20, this.height - (tabBarBottom + 4) - 4);
 			fakePlayerArea = new ScreenRectangle(
 					PADDING,
 					tabBarBottom + 4,
 					this.width - PADDING * 2 - SCROLLBAR_WIDTH - 2,
-					this.height - (tabBarBottom + 4) - 4
+					fpAreaHeight
 			);
 			fakePlayerTab.doLayout(fakePlayerArea);
 			for (PresetCommandTab tab : presetTabs) {
@@ -269,11 +285,6 @@ public class CommandGUIScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (contextMenuName != null) {
-			clearContextMenu();
-			return true;
-		}
-
 		Tab currentTab = tabManager.getCurrentTab();
 		if (currentTab == fakePlayerTab) {
 			fakePlayerTab.scroll(scrollY);
@@ -308,76 +319,12 @@ public class CommandGUIScreen extends Screen {
 
 	@Override
 	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent mouseEvent, boolean focused) {
-		double mouseX = mouseEvent.x();
-		double mouseY = mouseEvent.y();
-		int button = mouseEvent.button();
-
-		if (contextMenuEntry != null) {
-			int menuWidth = CONTEXT_MENU_WIDTH;
-			int menuHeight = CONTEXT_MENU_HEIGHT;
-			
-			int menuX = contextMenuX;
-			int menuY = contextMenuY;
-			if (menuX + menuWidth > this.width) menuX = this.width - menuWidth;
-			if (menuY + menuHeight > this.height - FOOTER_HEIGHT) menuY = this.height - FOOTER_HEIGHT - menuHeight;
-
-			if (mouseX >= menuX && mouseX < menuX + menuWidth &&
-					mouseY >= menuY && mouseY < menuY + menuHeight) {
-
-				if (mouseY < menuY + CONTEXT_MENU_ITEM_HEIGHT) {
-					clearContextMenu();
-					this.minecraft.setScreen(new EditCommandScreen(this, contextMenuName, contextMenuEntry));
-					return true;
-				} else {
-					CommandConfig.removeCommand(contextMenuName);
-					removeTabButtons(customTab);
-					customTab.refresh();
-					addTabButtons(customTab);
-				}
-				clearContextMenu();
-				return true;
-			}
-			clearContextMenu();
-			return true;
-		}
-
-		Tab currentTab = tabManager.getCurrentTab();
-
-		if (button == 1 && currentTab == customTab) {
-			for (Button btn : customTab.getButtons()) {
-				if (btn.visible && mouseX >= btn.getX() && mouseX < btn.getX() + btn.getWidth() &&
-						mouseY >= btn.getY() && mouseY < btn.getY() + btn.getHeight()) {
-					String name = btn.getMessage().getString();
-					String categoryId = CommandConfig.findCommandCategory(name);
-					if (categoryId != null) {
-						CommandConfig.CommandEntry entry = CommandConfig.getCommandsByCategory(categoryId).get(name);
-						if (entry != null) {
-							contextMenuName = name;
-							contextMenuEntry = entry;
-							contextMenuX = (int) mouseX;
-							contextMenuY = (int) mouseY;
-							return true;
-						}
-					}
-				}
-			}
-		}
-
 		return super.mouseClicked(mouseEvent, focused);
-	}
-	
-	private void clearContextMenu() {
-		contextMenuName = null;
-		contextMenuEntry = null;
 	}
 	
 	private void executeCommand(String command) {
 		if (this.minecraft != null && this.minecraft.player != null) {
-			if (command.startsWith("/")) {
-				this.minecraft.player.connection.sendCommand(command.substring(1));
-			} else {
-				this.minecraft.player.connection.sendCommand(command);
-			}
+			CommandHelper.sendCommand(command);
 		}
 		if (!shouldKeepOpen()) {
 			this.minecraft.setScreen(null);
@@ -398,10 +345,6 @@ public class CommandGUIScreen extends Screen {
 		
 		if (currentTab == customTab) {
 			customTab.renderCategoryScrollbar(guiGraphics);
-			
-			guiGraphics.drawCenteredString(this.font,
-					Component.translatable("screen.command-gui.right_click_hint"),
-					this.width / 2, this.height - FOOTER_HEIGHT - 12, 0xFF888888);
 
 			if (customTab.isEmpty()) {
 				ScreenRectangle area = customTab.getArea();
@@ -423,44 +366,8 @@ public class CommandGUIScreen extends Screen {
 				}
 			}
 		}
-
-		renderContextMenu(guiGraphics, mouseX, mouseY);
 	}
 	
-	private void renderContextMenu(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		if (contextMenuEntry == null) return;
-		
-		int menuWidth = CONTEXT_MENU_WIDTH;
-		int menuHeight = CONTEXT_MENU_HEIGHT;
-
-		int menuX = contextMenuX;
-		int menuY = contextMenuY;
-		if (menuX + menuWidth > this.width) menuX = this.width - menuWidth;
-		if (menuY + menuHeight > this.height - FOOTER_HEIGHT) menuY = this.height - FOOTER_HEIGHT - menuHeight;
-
-		guiGraphics.fill(menuX - 1, menuY - 1, menuX + menuWidth + 1, menuY + menuHeight + 1, 0xFF333333);
-		guiGraphics.fill(menuX, menuY, menuX + menuWidth, menuY + menuHeight, 0xFF000000);
-
-		boolean hoverEdit = mouseX >= menuX && mouseX < menuX + menuWidth &&
-				mouseY >= menuY && mouseY < menuY + CONTEXT_MENU_ITEM_HEIGHT;
-		boolean hoverDelete = mouseX >= menuX && mouseX < menuX + menuWidth &&
-				mouseY >= menuY + CONTEXT_MENU_ITEM_HEIGHT && mouseY < menuY + CONTEXT_MENU_HEIGHT;
-
-		if (hoverEdit) {
-			guiGraphics.fill(menuX, menuY, menuX + menuWidth, menuY + CONTEXT_MENU_ITEM_HEIGHT, 0xFF444444);
-		}
-		if (hoverDelete) {
-			guiGraphics.fill(menuX, menuY + CONTEXT_MENU_ITEM_HEIGHT, menuX + menuWidth, menuY + CONTEXT_MENU_HEIGHT, 0xFF444444);
-		}
-
-		guiGraphics.drawCenteredString(this.font,
-				Component.translatable("screen.command-gui.edit"),
-				menuX + menuWidth / 2, menuY + 6, hoverEdit ? 0xFF55FF55 : 0xFFFFFFFF);
-		guiGraphics.drawCenteredString(this.font,
-				Component.translatable("screen.command-gui.delete"),
-				menuX + menuWidth / 2, menuY + 26, hoverDelete ? 0xFFFF5555 : 0xFFFFFFFF);
-	}
-
 	@Override
 	public boolean isPauseScreen() {
 		return false;
