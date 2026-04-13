@@ -1,5 +1,10 @@
 package com.remrin.client.gui;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -9,221 +14,234 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.PlayerSkin;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Consumer;
-
+/**
+ * Player selector screen that lists currently online players for the user to choose from, used to
+ * fill in the {@code {player}} placeholder in a command.
+ * <p>
+ * Supports three filter modes ({@link FilterMode}):
+ * <ul>
+ *   <li>{@code ALL} - show all players (including self)</li>
+ *   <li>{@code EXCLUDE_SELF} - exclude the local player</li>
+ *   <li>{@code ONLY_FAKE_PLAYERS} - show only Carpet fake players</li>
+ * </ul>
+ * The selected player name is passed via the {@link #onPlayerSelected} callback (or Consumer parameter).
+ */
 public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
-	private static final int ITEM_WIDTH = 90;
-	private static final int ITEM_HEIGHT = 24;
-	private static final int COLUMNS = 4;
-	private static final int PADDING = 10;
-	private static final int FACE_SIZE = 8;
 
-	public enum FilterMode {
-		ALL,
-		EXCLUDE_SELF,
-		ONLY_FAKE_PLAYERS
-	}
+  private static final int ITEM_WIDTH = 90;
+  private static final int ITEM_HEIGHT = 24;
+  private static final int COLUMNS = 4;
+  private static final int PADDING = 10;
+  private static final int FACE_SIZE = 8;
+  private final String commandTemplate;
+  private final Consumer<String> onPlayerSelected;
+  private final Component titleText;
+  private final FilterMode filterMode;
+  private final List<Button> playerButtons = new ArrayList<>();
+  private List<PlayerInfo> players = new ArrayList<>();
+  private int scrollOffset = 0;
+  private boolean initialized = false;
+  public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate) {
+    this(parent, title, commandTemplate, FilterMode.EXCLUDE_SELF, null);
+  }
+  public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate,
+      FilterMode filterMode) {
+    this(parent, title, commandTemplate, filterMode, null);
+  }
 
-	private static boolean isFakePlayer(PlayerInfo playerInfo) {
-		return CommandHelper.isFakePlayer(playerInfo);
-	}
+  public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate,
+      FilterMode filterMode, Consumer<String> onPlayerSelected) {
+    super(title, parent);
+    this.titleText = title;
+    this.commandTemplate = commandTemplate;
+    this.filterMode = filterMode;
+    this.onPlayerSelected = onPlayerSelected;
+  }
 
-	private final String commandTemplate;
-	private final Consumer<String> onPlayerSelected;
-	private final Component titleText;
-	private final FilterMode filterMode;
+  private static boolean isFakePlayer(PlayerInfo playerInfo) {
+    return CommandHelper.isFakePlayer(playerInfo);
+  }
 
-	private List<PlayerInfo> players = new ArrayList<>();
-	private final List<Button> playerButtons = new ArrayList<>();
-	private int scrollOffset = 0;
-	private boolean initialized = false;
+  @Override
+  protected void init() {
+    super.init();
+    playerButtons.clear();
 
-	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate) {
-		this(parent, title, commandTemplate, FilterMode.EXCLUDE_SELF, null);
-	}
+    if (!initialized) {
+      loadPlayers();
+      initialized = true;
+    }
+    buildPlayerButtons();
 
-	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate, FilterMode filterMode) {
-		this(parent, title, commandTemplate, filterMode, null);
-	}
+    int closeBtnY = this.height - 28;
+    this.addRenderableWidget(Button.builder(
+        Component.translatable("screen.command-gui.back"),
+        button -> this.minecraft.setScreen(parent)
+    ).bounds(this.width / 2 - 75, closeBtnY, 150, 20).build());
+  }
 
-	public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate, FilterMode filterMode, Consumer<String> onPlayerSelected) {
-		super(title, parent);
-		this.titleText = title;
-		this.commandTemplate = commandTemplate;
-		this.filterMode = filterMode;
-		this.onPlayerSelected = onPlayerSelected;
-	}
+  /**
+   * Filters the online player list according to {@link FilterMode} to produce the set of players to
+   * display. Only called on the first {@link #init()} to avoid resetting the list on every screen
+   * resize.
+   */
+  private void loadPlayers() {
+    players.clear();
+    if (this.minecraft != null && this.minecraft.getConnection() != null) {
+      UUID selfUUID = this.minecraft.player != null ? this.minecraft.player.getUUID() : null;
+      Collection<PlayerInfo> onlinePlayers = this.minecraft.getConnection().getOnlinePlayers();
+      for (PlayerInfo player : onlinePlayers) {
+        boolean isSelf = selfUUID != null && player.getProfile().id().equals(selfUUID);
 
+        switch (filterMode) {
+          case ALL:
+            players.add(player);
+            break;
+          case EXCLUDE_SELF:
+            if (!isSelf) {
+              players.add(player);
+            }
+            break;
+          case ONLY_FAKE_PLAYERS:
+            if (!isSelf && isFakePlayer(player)) {
+              players.add(player);
+            }
+            break;
+        }
+      }
+    }
+  }
 
-	@Override
-	protected void init() {
-		super.init();
-		playerButtons.clear();
-		
-		if (!initialized) {
-			loadPlayers();
-			initialized = true;
-		}
-		buildPlayerButtons();
+  private void buildPlayerButtons() {
+    int startY = 40;
+    int listHeight = this.height - startY - 50;
+    int maxRowsVisible = listHeight / ITEM_HEIGHT;
+    int maxItemsVisible = maxRowsVisible * COLUMNS;
 
-		int closeBtnY = this.height - 28;
-		this.addRenderableWidget(Button.builder(
-				Component.translatable("screen.command-gui.back"),
-				button -> this.minecraft.setScreen(parent)
-		).bounds(this.width / 2 - 75, closeBtnY, 150, 20).build());
-	}
+    int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * 5;
+    int startX = (this.width - totalWidth) / 2;
 
-	private void loadPlayers() {
-		players.clear();
-		if (this.minecraft != null && this.minecraft.getConnection() != null) {
-			UUID selfUUID = this.minecraft.player != null ? this.minecraft.player.getUUID() : null;
-			Collection<PlayerInfo> onlinePlayers = this.minecraft.getConnection().getOnlinePlayers();
-			for (PlayerInfo player : onlinePlayers) {
-				boolean isSelf = selfUUID != null && player.getProfile().id().equals(selfUUID);
-				
-				switch (filterMode) {
-					case ALL:
-						players.add(player);
-						break;
-					case EXCLUDE_SELF:
-						if (!isSelf) {
-							players.add(player);
-						}
-						break;
-					case ONLY_FAKE_PLAYERS:
-						if (!isSelf && isFakePlayer(player)) {
-							players.add(player);
-						}
-						break;
-				}
-			}
-		}
-	}
+    for (int i = 0; i < Math.min(maxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
+      int index = i + scrollOffset * COLUMNS;
+      if (index >= players.size()) {
+        break;
+      }
 
-	private void buildPlayerButtons() {
-		int startY = 40;
-		int listHeight = this.height - startY - 50;
-		int maxRowsVisible = listHeight / ITEM_HEIGHT;
-		int maxItemsVisible = maxRowsVisible * COLUMNS;
+      PlayerInfo playerInfo = players.get(index);
+      String playerName = playerInfo.getProfile().name();
 
-		int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * 5;
-		int startX = (this.width - totalWidth) / 2;
+      int col = i % COLUMNS;
+      int row = i / COLUMNS;
+      int x = startX + col * (ITEM_WIDTH + 5);
+      int y = startY + row * ITEM_HEIGHT;
 
-		for (int i = 0; i < Math.min(maxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
-			int index = i + scrollOffset * COLUMNS;
-			if (index >= players.size()) break;
+      Button playerBtn = Button.builder(
+          Component.literal("   " + playerName),
+          btn -> selectPlayer(playerName)
+      ).bounds(x, y, ITEM_WIDTH, ITEM_HEIGHT - 4).build();
 
-			PlayerInfo playerInfo = players.get(index);
-			String playerName = playerInfo.getProfile().name();
+      playerButtons.add(playerBtn);
+      this.addRenderableWidget(playerBtn);
+    }
+  }
 
-			int col = i % COLUMNS;
-			int row = i / COLUMNS;
-			int x = startX + col * (ITEM_WIDTH + 5);
-			int y = startY + row * ITEM_HEIGHT;
+  protected void onPlayerSelected(String playerName) {
+  }
 
-			Button playerBtn = Button.builder(
-					Component.literal("   " + playerName),
-					btn -> selectPlayer(playerName)
-			).bounds(x, y, ITEM_WIDTH, ITEM_HEIGHT - 4).build();
+  private void selectPlayer(String playerName) {
+    if (onPlayerSelected != null) {
+      onPlayerSelected.accept(playerName);
+    } else {
+      onPlayerSelected(playerName);
+      if (commandTemplate != null) {
+        String command = commandTemplate.replace("{player}", playerName);
+        executeCommand(command);
+      }
+    }
+  }
 
-			playerButtons.add(playerBtn);
-			this.addRenderableWidget(playerBtn);
-		}
-	}
+  private void executeCommand(String command) {
+    Minecraft mc = Minecraft.getInstance();
+    if (mc != null && mc.player != null) {
+      mc.setScreen(null);
+      ChainedCommandExecutor.sendCommand(command);
+    }
+  }
 
-	protected void onPlayerSelected(String playerName) {
-	}
+  @Override
+  public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    int startY = 40;
+    int listHeight = this.height - startY - 50;
+    int maxRowsVisible = listHeight / ITEM_HEIGHT;
+    int totalRows = (players.size() + COLUMNS - 1) / COLUMNS;
 
-	private void selectPlayer(String playerName) {
-		if (onPlayerSelected != null) {
-			onPlayerSelected.accept(playerName);
-		} else {
-			onPlayerSelected(playerName);
-			if (commandTemplate != null) {
-				String command = commandTemplate.replace("{player}", playerName);
-				executeCommand(command);
-			}
-		}
-	}
+    if (totalRows > maxRowsVisible) {
+      if (scrollY > 0 && scrollOffset > 0) {
+        scrollOffset--;
+        rebuildPlayerButtons();
+      } else if (scrollY < 0 && scrollOffset < totalRows - maxRowsVisible) {
+        scrollOffset++;
+        rebuildPlayerButtons();
+      }
+    }
+    return true;
+  }
 
-	private void executeCommand(String command) {
-		Minecraft mc = Minecraft.getInstance();
-		if (mc != null && mc.player != null) {
-			mc.setScreen(null);
-			ChainedCommandExecutor.sendCommand(command);
-		}
-	}
+  private void rebuildPlayerButtons() {
+    for (Button btn : playerButtons) {
+      this.removeWidget(btn);
+    }
+    playerButtons.clear();
+    buildPlayerButtons();
+  }
 
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		int startY = 40;
-		int listHeight = this.height - startY - 50;
-		int maxRowsVisible = listHeight / ITEM_HEIGHT;
-		int totalRows = (players.size() + COLUMNS - 1) / COLUMNS;
+  @Override
+  public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-		if (totalRows > maxRowsVisible) {
-			if (scrollY > 0 && scrollOffset > 0) {
-				scrollOffset--;
-				rebuildPlayerButtons();
-			} else if (scrollY < 0 && scrollOffset < totalRows - maxRowsVisible) {
-				scrollOffset++;
-				rebuildPlayerButtons();
-			}
-		}
-		return true;
-	}
-	
-	private void rebuildPlayerButtons() {
-		for (Button btn : playerButtons) {
-			this.removeWidget(btn);
-		}
-		playerButtons.clear();
-		buildPlayerButtons();
-	}
+    guiGraphics.drawCenteredString(this.font, this.titleText, this.width / 2, 15, 0xFFFFFFFF);
 
-	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-		super.render(guiGraphics, mouseX, mouseY, partialTick);
+    int startY = 40;
+    int listHeight = this.height - startY - 50;
+    int maxRowsVisible = listHeight / ITEM_HEIGHT;
+    int maxItemsVisible = maxRowsVisible * COLUMNS;
 
-		guiGraphics.drawCenteredString(this.font, this.titleText, this.width / 2, 15, 0xFFFFFFFF);
+    int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * 5;
+    int startX = (this.width - totalWidth) / 2;
 
-		int startY = 40;
-		int listHeight = this.height - startY - 50;
-		int maxRowsVisible = listHeight / ITEM_HEIGHT;
-		int maxItemsVisible = maxRowsVisible * COLUMNS;
+    for (int i = 0; i < Math.min(maxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
+      int index = i + scrollOffset * COLUMNS;
+      if (index >= players.size()) {
+        break;
+      }
 
-		int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * 5;
-		int startX = (this.width - totalWidth) / 2;
+      PlayerInfo playerInfo = players.get(index);
 
-		for (int i = 0; i < Math.min(maxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
-			int index = i + scrollOffset * COLUMNS;
-			if (index >= players.size()) break;
+      int col = i % COLUMNS;
+      int row = i / COLUMNS;
+      int x = startX + col * (ITEM_WIDTH + 5);
+      int y = startY + row * ITEM_HEIGHT;
 
-			PlayerInfo playerInfo = players.get(index);
+      int btnCenterY = y + (ITEM_HEIGHT - 4) / 2;
+      int faceY = btnCenterY - FACE_SIZE / 2;
 
-			int col = i % COLUMNS;
-			int row = i / COLUMNS;
-			int x = startX + col * (ITEM_WIDTH + 5);
-			int y = startY + row * ITEM_HEIGHT;
+      PlayerSkin skin = playerInfo.getSkin();
+      PlayerFaceRenderer.draw(guiGraphics, skin, x + 4, faceY, FACE_SIZE);
+    }
 
-			int btnCenterY = y + (ITEM_HEIGHT - 4) / 2;
-			int faceY = btnCenterY - FACE_SIZE / 2;
+    if (players.isEmpty()) {
+      guiGraphics.drawCenteredString(this.font,
+          Component.translatable("screen.command-gui.no_players"),
+          this.width / 2, this.height / 2, 0xFF888888);
+    }
 
-			PlayerSkin skin = playerInfo.getSkin();
-			PlayerFaceRenderer.draw(guiGraphics, skin, x + 4, faceY, FACE_SIZE);
-		}
+    int bottomY = this.height - 45;
+    guiGraphics.fill(0, bottomY, this.width, bottomY + 1, 0xFF555555);
+  }
 
-		if (players.isEmpty()) {
-			guiGraphics.drawCenteredString(this.font,
-					Component.translatable("screen.command-gui.no_players"),
-					this.width / 2, this.height / 2, 0xFF888888);
-		}
-
-		int bottomY = this.height - 45;
-		guiGraphics.fill(0, bottomY, this.width, bottomY + 1, 0xFF555555);
-	}
+  public enum FilterMode {
+    ALL,
+    EXCLUDE_SELF,
+    ONLY_FAKE_PLAYERS
+  }
 }

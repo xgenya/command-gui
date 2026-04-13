@@ -8,77 +8,84 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+/**
+ * Text input screen used to fill in the {@code {name}} placeholder in a command. Provides a single
+ * text field confirmed with Enter; the result is passed via the {@link #onInputConfirmed(String)}
+ * callback.
+ */
 public class TextInputScreen extends BaseParentedScreen<Screen> {
-	private final String commandTemplate;
-	private final String placeholder;
-	private EditBox inputField;
 
-	public TextInputScreen(Screen parent, Component title, String commandTemplate, String placeholder) {
-		super(title, parent);
-		this.commandTemplate = commandTemplate;
-		this.placeholder = placeholder;
-	}
+  private final String commandTemplate;
+  private final String placeholder;
+  private EditBox inputField;
 
-	@Override
-	protected void init() {
-		super.init();
+  public TextInputScreen(Screen parent, Component title, String commandTemplate,
+      String placeholder) {
+    super(title, parent);
+    this.commandTemplate = commandTemplate;
+    this.placeholder = placeholder;
+  }
 
-		int centerX = this.width / 2;
-		int centerY = this.height / 2;
+  @Override
+  protected void init() {
+    super.init();
 
-		inputField = new EditBox(this.font, centerX - 100, centerY - 10, 200, 20,
-				Component.literal(placeholder));
-		inputField.setMaxLength(50);
-		inputField.setHint(Component.literal(placeholder));
-		this.addRenderableWidget(inputField);
-		this.setInitialFocus(inputField);
-	}
+    int centerX = this.width / 2;
+    int centerY = this.height / 2;
 
-	protected void onInputConfirmed(String input) {
-	}
+    inputField = new EditBox(this.font, centerX - 100, centerY - 10, 200, 20,
+        Component.literal(placeholder));
+    inputField.setMaxLength(50);
+    inputField.setHint(Component.literal(placeholder));
+    this.addRenderableWidget(inputField);
+    this.setInitialFocus(inputField);
+  }
 
-	@Override
-	public boolean keyPressed(KeyEvent keyEvent) {
-		int keyCode = keyEvent.key();
+  protected void onInputConfirmed(String input) {
+  }
 
-		if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-			String value = inputField.getValue().trim();
-			if (!value.isEmpty()) {
-				onInputConfirmed(value);
-				if (commandTemplate != null) {
-					String command = commandTemplate.replace("{name}", value);
-					executeCommand(command);
-				}
-			}
-			return true;
-		}
+  @Override
+  public boolean keyPressed(KeyEvent keyEvent) {
+    int keyCode = keyEvent.key();
 
-		if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-			this.minecraft.setScreen(parent);
-			return true;
-		}
+    if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+      String value = inputField.getValue().trim();
+      if (!value.isEmpty()) {
+        onInputConfirmed(value);
+        if (commandTemplate != null) {
+          String command = commandTemplate.replace("{name}", value);
+          executeCommand(command);
+        }
+      }
+      return true;
+    }
 
-		return super.keyPressed(keyEvent);
-	}
+    if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+      this.minecraft.setScreen(parent);
+      return true;
+    }
 
-	private void executeCommand(String command) {
-		Minecraft mc = Minecraft.getInstance();
-		if (mc != null && mc.player != null) {
-			mc.setScreen(null);
-			ChainedCommandExecutor.sendCommand(command);
-		}
-	}
+    return super.keyPressed(keyEvent);
+  }
 
-	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-		super.render(guiGraphics, mouseX, mouseY, partialTick);
+  private void executeCommand(String command) {
+    Minecraft mc = Minecraft.getInstance();
+    if (mc != null && mc.player != null) {
+      mc.setScreen(null);
+      ChainedCommandExecutor.sendCommand(command);
+    }
+  }
 
-		int centerX = this.width / 2;
-		int centerY = this.height / 2;
+  @Override
+  public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-		guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 40, 0xFFFFFFFF);
-		guiGraphics.drawCenteredString(this.font,
-				Component.translatable("screen.command-gui.enter_to_confirm"),
-				centerX, centerY + 20, 0xFF888888);
-	}
+    int centerX = this.width / 2;
+    int centerY = this.height / 2;
+
+    guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 40, 0xFFFFFFFF);
+    guiGraphics.drawCenteredString(this.font,
+        Component.translatable("screen.command-gui.enter_to_confirm"),
+        centerX, centerY + 20, 0xFF888888);
+  }
 }

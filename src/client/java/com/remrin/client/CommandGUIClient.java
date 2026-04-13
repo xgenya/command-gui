@@ -19,47 +19,64 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.lwjgl.glfw.GLFW;
 
+/**
+ * Client-side mod entry point. Responsible for initializing configs, registering the preset reload
+ * listener, binding the hotkey, and driving per-tick logic (timed tasks and the delayed command
+ * queue).
+ */
 public class CommandGUIClient implements ClientModInitializer {
-	public static final Category CMD_GUI_CATEGORY = Category.register(Identifier.parse("command-gui:general"));
-	private static KeyMapping openGuiKey;
 
-	@Override
-	public void onInitializeClient() {
-		CommandConfig.load();
-		SettingsConfig.load();
-		
-		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
-				new SimpleSynchronousResourceReloadListener() {
-					@Override
-					public Identifier getFabricId() {
-						return Identifier.parse("command-gui:presets");
-					}
+  /**
+   * Key binding category for this mod (shown in the Controls settings screen)
+   */
+  public static final Category CMD_GUI_CATEGORY = Category.register(
+      Identifier.parse("command-gui:general"));
+  /**
+   * Key mapping to open/close the GUI, defaults to the C key
+   */
+  private static KeyMapping openGuiKey;
 
-					@Override
-					public void onResourceManagerReload(ResourceManager resourceManager) {
-						PresetConfig.load();
-					}
-				}
-		);
+  @Override
+  public void onInitializeClient() {
+    // Load persistent custom command and settings configs
+    CommandConfig.load();
+    SettingsConfig.load();
 
-		openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
-				"key.command-gui.open_gui",
-				InputConstants.Type.KEYSYM,
-				GLFW.GLFW_KEY_C,
-				CMD_GUI_CATEGORY
-		));
+    // Register a resource reload listener: re-read preset JSON files after each resource pack load
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
+        new SimpleSynchronousResourceReloadListener() {
+          @Override
+          public Identifier getFabricId() {
+            return Identifier.parse("command-gui:presets");
+          }
 
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (openGuiKey.consumeClick()) {
-				if (client.screen instanceof CommandGUIScreen) {
-					client.setScreen(null);
-				} else if (client.screen == null) {
-					client.setScreen(new CommandGUIScreen());
-				}
-			}
-			
-			TimedTaskManager.tick();
-			ChainedCommandExecutor.tickDelayed();
-		});
-	}
+          @Override
+          public void onResourceManagerReload(ResourceManager resourceManager) {
+            PresetConfig.load();
+          }
+        }
+    );
+
+    openGuiKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+        "key.command-gui.open_gui",
+        InputConstants.Type.KEYSYM,
+        GLFW.GLFW_KEY_C,
+        CMD_GUI_CATEGORY
+    ));
+
+    ClientTickEvents.END_CLIENT_TICK.register(client -> {
+      // Toggle the GUI: close it if already open, otherwise open the main screen
+      while (openGuiKey.consumeClick()) {
+        if (client.screen instanceof CommandGUIScreen) {
+          client.setScreen(null);
+        } else if (client.screen == null) {
+          client.setScreen(new CommandGUIScreen());
+        }
+      }
+
+      // Advance timed tasks (countdown spawn/kill) and the delayed command queue every tick
+      TimedTaskManager.tick();
+      ChainedCommandExecutor.tickDelayed();
+    });
+  }
 }

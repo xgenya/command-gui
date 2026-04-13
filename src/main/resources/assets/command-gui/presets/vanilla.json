@@ -1,82 +1,259 @@
 {
-	"id": "vanilla",
-	"nameKey": "screen.command-gui.tab.vanilla",
-	"groups": [
-		{
-			"nameKey": "screen.command-gui.vanilla.gamemode",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.gamemode.survival", "command": "/gamemode survival", "description": "screen.command-gui.vanilla.gamemode.survival.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamemode.creative", "command": "/gamemode creative", "description": "screen.command-gui.vanilla.gamemode.creative.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamemode.adventure", "command": "/gamemode adventure", "description": "screen.command-gui.vanilla.gamemode.adventure.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamemode.spectator", "command": "/gamemode spectator", "description": "screen.command-gui.vanilla.gamemode.spectator.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.time",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.time.day", "command": "/time set day", "description": "screen.command-gui.vanilla.time.day.desc"},
-				{"nameKey": "screen.command-gui.vanilla.time.noon", "command": "/time set noon", "description": "screen.command-gui.vanilla.time.noon.desc"},
-				{"nameKey": "screen.command-gui.vanilla.time.night", "command": "/time set night", "description": "screen.command-gui.vanilla.time.night.desc"},
-				{"nameKey": "screen.command-gui.vanilla.time.midnight", "command": "/time set midnight", "description": "screen.command-gui.vanilla.time.midnight.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.weather",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.weather.clear", "command": "/weather clear", "description": "screen.command-gui.vanilla.weather.clear.desc"},
-				{"nameKey": "screen.command-gui.vanilla.weather.rain", "command": "/weather rain", "description": "screen.command-gui.vanilla.weather.rain.desc"},
-				{"nameKey": "screen.command-gui.vanilla.weather.thunder", "command": "/weather thunder", "description": "screen.command-gui.vanilla.weather.thunder.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.difficulty",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.difficulty.peaceful", "command": "/difficulty peaceful", "description": "screen.command-gui.vanilla.difficulty.peaceful.desc"},
-				{"nameKey": "screen.command-gui.vanilla.difficulty.easy", "command": "/difficulty easy", "description": "screen.command-gui.vanilla.difficulty.easy.desc"},
-				{"nameKey": "screen.command-gui.vanilla.difficulty.normal", "command": "/difficulty normal", "description": "screen.command-gui.vanilla.difficulty.normal.desc"},
-				{"nameKey": "screen.command-gui.vanilla.difficulty.hard", "command": "/difficulty hard", "description": "screen.command-gui.vanilla.difficulty.hard.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.tick",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.tick.freeze", "command": "/tick freeze", "description": "screen.command-gui.vanilla.tick.freeze.desc"},
-				{"nameKey": "screen.command-gui.vanilla.tick.unfreeze", "command": "/tick unfreeze", "description": "screen.command-gui.vanilla.tick.unfreeze.desc"},
-				{"nameKey": "screen.command-gui.vanilla.tick.step", "command": "/tick step {time}", "description": "screen.command-gui.vanilla.tick.step.desc", "quickStrValues": ["1t", "5t", "10t", "20t", "1s", "5s", "10s", "30s", "1d"]},
-				{"nameKey": "screen.command-gui.vanilla.tick.step_stop", "command": "/tick step stop", "description": "screen.command-gui.vanilla.tick.step_stop.desc"},
-				{"nameKey": "screen.command-gui.vanilla.tick.rate", "command": "/tick rate {number}", "description": "screen.command-gui.vanilla.tick.rate.desc", "minValue": 1, "maxValue": 10000, "quickValues": [1, 5, 10, 20, 40, 60, 100, 200]},
-				{"nameKey": "screen.command-gui.vanilla.tick.sprint", "command": "/tick sprint {time}", "description": "screen.command-gui.vanilla.tick.sprint.desc", "quickStrValues": ["1s", "5s", "10s", "30s", "1d", "1000t", "6000t", "24000t"]},
-				{"nameKey": "screen.command-gui.vanilla.tick.sprint_stop", "command": "/tick sprint stop", "description": "screen.command-gui.vanilla.tick.sprint_stop.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.tp",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.tp.player", "command": "/tp {player}", "description": "screen.command-gui.vanilla.tp.player.desc"},
-				{"nameKey": "screen.command-gui.vanilla.tp.coords", "command": "/tp @s {coords}", "description": "screen.command-gui.vanilla.tp.coords.desc"},
-				{"nameKey": "screen.command-gui.vanilla.tp.spawn", "command": "/tp @s 0 ~ 0", "description": "screen.command-gui.vanilla.tp.spawn.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.player",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.kill.self", "command": "/kill @s", "description": "screen.command-gui.vanilla.kill.self.desc"},
-				{"nameKey": "screen.command-gui.vanilla.heal.full", "command": "/effect give @s minecraft:instant_health infinite 255", "description": "screen.command-gui.vanilla.heal.full.desc"},
-				{"nameKey": "screen.command-gui.vanilla.heal.feed", "command": "/effect give @s minecraft:saturation infinite 255", "description": "screen.command-gui.vanilla.heal.feed.desc"},
-				{"nameKey": "screen.command-gui.vanilla.effect.clear", "command": "/effect clear @s", "description": "screen.command-gui.vanilla.effect.clear.desc"}
-			]
-		},
-		{
-			"nameKey": "screen.command-gui.vanilla.world",
-			"commands": [
-				{"nameKey": "screen.command-gui.vanilla.kill.entities", "command": "/kill @e[type=!player]", "description": "screen.command-gui.vanilla.kill.entities.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamerule.keep_inventory_on", "command": "/gamerule keepInventory true", "description": "screen.command-gui.vanilla.gamerule.keep_inventory_on.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamerule.keep_inventory_off", "command": "/gamerule keepInventory false", "description": "screen.command-gui.vanilla.gamerule.keep_inventory_off.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamerule.mob_griefing_on", "command": "/gamerule mobGriefing true", "description": "screen.command-gui.vanilla.gamerule.mob_griefing_on.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamerule.mob_griefing_off", "command": "/gamerule mobGriefing false", "description": "screen.command-gui.vanilla.gamerule.mob_griefing_off.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamerule.daylight_cycle_on", "command": "/gamerule doDaylightCycle true", "description": "screen.command-gui.vanilla.gamerule.daylight_cycle_on.desc"},
-				{"nameKey": "screen.command-gui.vanilla.gamerule.daylight_cycle_off", "command": "/gamerule doDaylightCycle false", "description": "screen.command-gui.vanilla.gamerule.daylight_cycle_off.desc"}
-			]
-		}
-	]
+  "id": "vanilla",
+  "nameKey": "screen.command-gui.tab.vanilla",
+  "groups": [
+    {
+      "nameKey": "screen.command-gui.vanilla.gamemode",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.gamemode.survival",
+          "command": "/gamemode survival",
+          "description": "screen.command-gui.vanilla.gamemode.survival.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamemode.creative",
+          "command": "/gamemode creative",
+          "description": "screen.command-gui.vanilla.gamemode.creative.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamemode.adventure",
+          "command": "/gamemode adventure",
+          "description": "screen.command-gui.vanilla.gamemode.adventure.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamemode.spectator",
+          "command": "/gamemode spectator",
+          "description": "screen.command-gui.vanilla.gamemode.spectator.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.time",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.time.day",
+          "command": "/time set day",
+          "description": "screen.command-gui.vanilla.time.day.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.time.noon",
+          "command": "/time set noon",
+          "description": "screen.command-gui.vanilla.time.noon.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.time.night",
+          "command": "/time set night",
+          "description": "screen.command-gui.vanilla.time.night.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.time.midnight",
+          "command": "/time set midnight",
+          "description": "screen.command-gui.vanilla.time.midnight.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.weather",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.weather.clear",
+          "command": "/weather clear",
+          "description": "screen.command-gui.vanilla.weather.clear.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.weather.rain",
+          "command": "/weather rain",
+          "description": "screen.command-gui.vanilla.weather.rain.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.weather.thunder",
+          "command": "/weather thunder",
+          "description": "screen.command-gui.vanilla.weather.thunder.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.difficulty",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.difficulty.peaceful",
+          "command": "/difficulty peaceful",
+          "description": "screen.command-gui.vanilla.difficulty.peaceful.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.difficulty.easy",
+          "command": "/difficulty easy",
+          "description": "screen.command-gui.vanilla.difficulty.easy.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.difficulty.normal",
+          "command": "/difficulty normal",
+          "description": "screen.command-gui.vanilla.difficulty.normal.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.difficulty.hard",
+          "command": "/difficulty hard",
+          "description": "screen.command-gui.vanilla.difficulty.hard.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.tick",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.freeze",
+          "command": "/tick freeze",
+          "description": "screen.command-gui.vanilla.tick.freeze.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.unfreeze",
+          "command": "/tick unfreeze",
+          "description": "screen.command-gui.vanilla.tick.unfreeze.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.step",
+          "command": "/tick step {time}",
+          "description": "screen.command-gui.vanilla.tick.step.desc",
+          "quickStrValues": [
+            "1t",
+            "5t",
+            "10t",
+            "20t",
+            "1s",
+            "5s",
+            "10s",
+            "30s",
+            "1d"
+          ]
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.step_stop",
+          "command": "/tick step stop",
+          "description": "screen.command-gui.vanilla.tick.step_stop.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.rate",
+          "command": "/tick rate {number}",
+          "description": "screen.command-gui.vanilla.tick.rate.desc",
+          "minValue": 1,
+          "maxValue": 10000,
+          "quickValues": [
+            1,
+            5,
+            10,
+            20,
+            40,
+            60,
+            100,
+            200
+          ]
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.sprint",
+          "command": "/tick sprint {time}",
+          "description": "screen.command-gui.vanilla.tick.sprint.desc",
+          "quickStrValues": [
+            "1s",
+            "5s",
+            "10s",
+            "30s",
+            "1d",
+            "1000t",
+            "6000t",
+            "24000t"
+          ]
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tick.sprint_stop",
+          "command": "/tick sprint stop",
+          "description": "screen.command-gui.vanilla.tick.sprint_stop.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.tp",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.tp.player",
+          "command": "/tp {player}",
+          "description": "screen.command-gui.vanilla.tp.player.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tp.coords",
+          "command": "/tp @s {coords}",
+          "description": "screen.command-gui.vanilla.tp.coords.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.tp.spawn",
+          "command": "/tp @s 0 ~ 0",
+          "description": "screen.command-gui.vanilla.tp.spawn.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.player",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.kill.self",
+          "command": "/kill @s",
+          "description": "screen.command-gui.vanilla.kill.self.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.heal.full",
+          "command": "/effect give @s minecraft:instant_health infinite 255",
+          "description": "screen.command-gui.vanilla.heal.full.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.heal.feed",
+          "command": "/effect give @s minecraft:saturation infinite 255",
+          "description": "screen.command-gui.vanilla.heal.feed.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.effect.clear",
+          "command": "/effect clear @s",
+          "description": "screen.command-gui.vanilla.effect.clear.desc"
+        }
+      ]
+    },
+    {
+      "nameKey": "screen.command-gui.vanilla.world",
+      "commands": [
+        {
+          "nameKey": "screen.command-gui.vanilla.kill.entities",
+          "command": "/kill @e[type=!player]",
+          "description": "screen.command-gui.vanilla.kill.entities.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamerule.keep_inventory_on",
+          "command": "/gamerule keepInventory true",
+          "description": "screen.command-gui.vanilla.gamerule.keep_inventory_on.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamerule.keep_inventory_off",
+          "command": "/gamerule keepInventory false",
+          "description": "screen.command-gui.vanilla.gamerule.keep_inventory_off.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamerule.mob_griefing_on",
+          "command": "/gamerule mobGriefing true",
+          "description": "screen.command-gui.vanilla.gamerule.mob_griefing_on.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamerule.mob_griefing_off",
+          "command": "/gamerule mobGriefing false",
+          "description": "screen.command-gui.vanilla.gamerule.mob_griefing_off.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamerule.daylight_cycle_on",
+          "command": "/gamerule doDaylightCycle true",
+          "description": "screen.command-gui.vanilla.gamerule.daylight_cycle_on.desc"
+        },
+        {
+          "nameKey": "screen.command-gui.vanilla.gamerule.daylight_cycle_off",
+          "command": "/gamerule doDaylightCycle false",
+          "description": "screen.command-gui.vanilla.gamerule.daylight_cycle_off.desc"
+        }
+      ]
+    }
+  ]
 }

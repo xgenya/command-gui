@@ -1,145 +1,153 @@
 package com.remrin.client.gui;
 
 import com.remrin.client.config.CommandConfig;
+import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
-import java.util.List;
-
+/**
+ * Screen for adding a custom command, extending {@link BaseCommandEditorScreen}. If multiple
+ * categories exist, an additional category selection button is shown at the bottom, allowing the
+ * new command to be saved to a specific category.
+ */
 public class AddCommandScreen extends BaseCommandEditorScreen {
-	private final String initialCategoryId;
-	private List<CommandConfig.Category> categories;
-	private int selectedCategoryIndex = 0;
-	private Button categoryButton;
 
-	public AddCommandScreen(CommandGUIScreen parent) {
-		this(parent, null);
-	}
+  private final String initialCategoryId;
+  private List<CommandConfig.Category> categories;
+  private int selectedCategoryIndex = 0;
+  private Button categoryButton;
+  private int savedCategoryIndex;
 
-	public AddCommandScreen(CommandGUIScreen parent, String initialCategoryId) {
-		super(Component.translatable("screen.command-gui.add_title"), parent);
-		this.initialCategoryId = initialCategoryId;
-	}
+  public AddCommandScreen(CommandGUIScreen parent) {
+    this(parent, null);
+  }
 
-	@Override
-	protected int getFieldStartY(int centerY) {
-		return centerY - 40;
-	}
+  public AddCommandScreen(CommandGUIScreen parent, String initialCategoryId) {
+    super(Component.translatable("screen.command-gui.add_title"), parent);
+    this.initialCategoryId = initialCategoryId;
+  }
 
-	@Override
-	protected int getTitleY(int centerY) {
-		return centerY - 55;
-	}
+  @Override
+  protected int getFieldStartY(int centerY) {
+    return centerY - 40;
+  }
 
-	@Override
-	protected String getInitialName() {
-		return "";
-	}
+  @Override
+  protected int getTitleY(int centerY) {
+    return centerY - 55;
+  }
 
-	@Override
-	protected String getInitialDescription() {
-		return "";
-	}
+  @Override
+  protected String getInitialName() {
+    return "";
+  }
 
-	@Override
-	protected String getInitialCommand() {
-		return "";
-	}
+  @Override
+  protected String getInitialDescription() {
+    return "";
+  }
 
-	@Override
-	protected boolean showNameHint() {
-		return true;
-	}
+  @Override
+  protected String getInitialCommand() {
+    return "";
+  }
 
-	@Override
-	protected Component getCommandHint() {
-		return Component.translatable("screen.command-gui.command_hint");
-	}
+  @Override
+  protected boolean showNameHint() {
+    return true;
+  }
 
-	@Override
-	protected void init() {
-		categories = CommandConfig.getCategories();
-		if (initialCategoryId != null) {
-			for (int i = 0; i < categories.size(); i++) {
-				if (categories.get(i).id.equals(initialCategoryId)) {
-					selectedCategoryIndex = i;
-					break;
-				}
-			}
-		}
-		super.init();
-	}
+  @Override
+  protected Component getCommandHint() {
+    return Component.translatable("screen.command-gui.command_hint");
+  }
 
-	@Override
-	protected int initExtraRow(int fieldX, int currentY) {
-		if (categories.size() > 1) {
-			int newY = currentY + ROW_GAP;
-			categoryButton = Button.builder(getCategoryDisplayName(), btn -> cycleCategory())
-					.bounds(fieldX, newY, CONTENT_WIDTH, INPUT_HEIGHT).build();
-			this.addRenderableWidget(categoryButton);
-			return newY;
-		}
-		return currentY;
-	}
+  @Override
+  protected void init() {
+    categories = CommandConfig.getCategories();
+    if (initialCategoryId != null) {
+      for (int i = 0; i < categories.size(); i++) {
+        if (categories.get(i).id.equals(initialCategoryId)) {
+          selectedCategoryIndex = i;
+          break;
+        }
+      }
+    }
+    super.init();
+  }
 
-	@Override
-	protected int renderExtraLabel(GuiGraphics guiGraphics, int labelX, int currentY) {
-		if (categories.size() > 1) {
-			int newY = currentY + ROW_GAP;
-			guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.category"),
-					labelX - this.font.width(Component.translatable("screen.command-gui.category")), newY + 4, 0xFFAAAAAA);
-			return newY;
-		}
-		return currentY;
-	}
+  @Override
+  protected int initExtraRow(int fieldX, int currentY) {
+    if (categories.size() > 1) {
+      int newY = currentY + ROW_GAP;
+      categoryButton = Button.builder(getCategoryDisplayName(), btn -> cycleCategory())
+          .bounds(fieldX, newY, CONTENT_WIDTH, INPUT_HEIGHT).build();
+      this.addRenderableWidget(categoryButton);
+      return newY;
+    }
+    return currentY;
+  }
 
-	private int savedCategoryIndex;
+  @Override
+  protected int renderExtraLabel(GuiGraphics guiGraphics, int labelX, int currentY) {
+    if (categories.size() > 1) {
+      int newY = currentY + ROW_GAP;
+      guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.category"),
+          labelX - this.font.width(Component.translatable("screen.command-gui.category")), newY + 4,
+          0xFFAAAAAA);
+      return newY;
+    }
+    return currentY;
+  }
 
-	@Override
-	protected void onBeforeResize() {
-		savedCategoryIndex = selectedCategoryIndex;
-	}
+  @Override
+  protected void onBeforeResize() {
+    savedCategoryIndex = selectedCategoryIndex;
+  }
 
-	@Override
-	protected void onAfterResize() {
-		selectedCategoryIndex = savedCategoryIndex;
-		if (categoryButton != null) {
-			categoryButton.setMessage(getCategoryDisplayName());
-		}
-	}
+  @Override
+  protected void onAfterResize() {
+    selectedCategoryIndex = savedCategoryIndex;
+    if (categoryButton != null) {
+      categoryButton.setMessage(getCategoryDisplayName());
+    }
+  }
 
-	private void cycleCategory() {
-		selectedCategoryIndex = (selectedCategoryIndex + 1) % categories.size();
-		categoryButton.setMessage(getCategoryDisplayName());
-	}
+  /**
+   * Cycles through the available categories and updates the category button label
+   */
+  private void cycleCategory() {
+    selectedCategoryIndex = (selectedCategoryIndex + 1) % categories.size();
+    categoryButton.setMessage(getCategoryDisplayName());
+  }
 
-	private Component getCategoryDisplayName() {
-		if (categories.isEmpty()) {
-			return Component.translatable("screen.command-gui.category.default");
-		}
-		CommandConfig.Category cat = categories.get(selectedCategoryIndex);
-		if (cat.getDisplayName() != null) {
-			return Component.literal(cat.getDisplayName());
-		}
-		return Component.translatable(cat.nameKey);
-	}
+  private Component getCategoryDisplayName() {
+    if (categories.isEmpty()) {
+      return Component.translatable("screen.command-gui.category.default");
+    }
+    CommandConfig.Category cat = categories.get(selectedCategoryIndex);
+    if (cat.getDisplayName() != null) {
+      return Component.literal(cat.getDisplayName());
+    }
+    return Component.translatable(cat.nameKey);
+  }
 
-	@Override
-	protected void performSave() {
-		String name = nameField.getValue().trim();
-		String description = descriptionField.getValue().trim();
-		String categoryId = categories.isEmpty() ? "default" : categories.get(selectedCategoryIndex).id;
-		List<String> commands = getAllCommands();
-		if (commands.size() > 1) {
-			CommandConfig.addCommandMulti(categoryId, name, commands, description);
-		} else if (!commands.isEmpty()) {
-			CommandConfig.addCommand(categoryId, name, commands.get(0), description);
-		}
-	}
+  @Override
+  protected void performSave() {
+    String name = nameField.getValue().trim();
+    String description = descriptionField.getValue().trim();
+    String categoryId = categories.isEmpty() ? "default" : categories.get(selectedCategoryIndex).id;
+    List<String> commands = getAllCommands();
+    if (commands.size() > 1) {
+      CommandConfig.addCommandMulti(categoryId, name, commands, description);
+    } else if (!commands.isEmpty()) {
+      CommandConfig.addCommand(categoryId, name, commands.get(0), description);
+    }
+  }
 
-	@Override
-	protected boolean hasExtraRow() {
-		return categories.size() > 1;
-	}
+  @Override
+  protected boolean hasExtraRow() {
+    return categories.size() > 1;
+  }
 }

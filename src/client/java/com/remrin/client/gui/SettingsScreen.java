@@ -7,73 +7,90 @@ import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
+/**
+ * Mod settings screen, providing the following toggle options:
+ * <ul>
+ *   <li>Whether to show the vanilla commands tab</li>
+ *   <li>Whether to show the Carpet commands tab</li>
+ *   <li>Whether to show the fake player management tab</li>
+ * </ul>
+ * After saving, {@link CommandGUIScreen} is immediately rebuilt to apply the new settings.
+ */
 public class SettingsScreen extends BaseParentedScreen<Screen> {
-	private Checkbox showVanillaCheckbox;
-	private Checkbox showCarpetCheckbox;
-	private Checkbox showFakePlayerCheckbox;
 
-	public SettingsScreen(Screen parent) {
-		super(Component.translatable("screen.command-gui.settings.title"), parent);
-	}
+  private Checkbox showVanillaCheckbox;
+  private Checkbox showCarpetCheckbox;
+  private Checkbox showFakePlayerCheckbox;
 
-	@Override
-	protected void init() {
-		super.init();
+  public SettingsScreen(Screen parent) {
+    super(Component.translatable("screen.command-gui.settings.title"), parent);
+  }
 
-		int centerX = this.width / 2;
-		int centerY = this.height / 2;
-		int contentWidth = 200;
+  @Override
+  protected void init() {
+    super.init();
 
-		int y = centerY - 50;
-		
-		showVanillaCheckbox = Checkbox.builder(
-				Component.translatable("screen.command-gui.settings.show_vanilla"),
-				this.font
-		).pos(centerX - contentWidth / 2, y).selected(SettingsConfig.getBoolean("show_vanilla_commands")).build();
-		this.addRenderableWidget(showVanillaCheckbox);
+    int centerX = this.width / 2;
+    int centerY = this.height / 2;
+    int contentWidth = 200;
 
-		y += 25;
-		showCarpetCheckbox = Checkbox.builder(
-				Component.translatable("screen.command-gui.settings.show_carpet"),
-				this.font
-		).pos(centerX - contentWidth / 2, y).selected(SettingsConfig.getBoolean("show_carpet_commands")).build();
-		this.addRenderableWidget(showCarpetCheckbox);
+    int y = centerY - 50;
 
-		y += 25;
-		showFakePlayerCheckbox = Checkbox.builder(
-				Component.translatable("screen.command-gui.settings.show_fakeplayer"),
-				this.font
-		).pos(centerX - contentWidth / 2, y).selected(SettingsConfig.getBoolean("show_fakeplayer_tab")).build();
-		this.addRenderableWidget(showFakePlayerCheckbox);
+    showVanillaCheckbox = Checkbox.builder(
+            Component.translatable("screen.command-gui.settings.show_vanilla"),
+            this.font
+        ).pos(centerX - contentWidth / 2, y)
+        .selected(SettingsConfig.getBoolean("show_vanilla_commands")).build();
+    this.addRenderableWidget(showVanillaCheckbox);
 
-		y += 45;
-		this.addRenderableWidget(Button.builder(
-				Component.translatable("screen.command-gui.settings.save"),
-				btn -> saveAndClose()
-		).bounds(centerX - 102, y, 100, 20).build());
+    y += 25;
+    showCarpetCheckbox = Checkbox.builder(
+            Component.translatable("screen.command-gui.settings.show_carpet"),
+            this.font
+        ).pos(centerX - contentWidth / 2, y).selected(SettingsConfig.getBoolean("show_carpet_commands"))
+        .build();
+    this.addRenderableWidget(showCarpetCheckbox);
 
-		this.addRenderableWidget(Button.builder(
-				Component.translatable("screen.command-gui.back"),
-				btn -> this.minecraft.setScreen(parent)
-		).bounds(centerX + 2, y, 100, 20).build());
-	}
+    y += 25;
+    showFakePlayerCheckbox = Checkbox.builder(
+            Component.translatable("screen.command-gui.settings.show_fakeplayer"),
+            this.font
+        ).pos(centerX - contentWidth / 2, y).selected(SettingsConfig.getBoolean("show_fakeplayer_tab"))
+        .build();
+    this.addRenderableWidget(showFakePlayerCheckbox);
 
-	private void saveAndClose() {
-		SettingsConfig.setBoolean("show_vanilla_commands", showVanillaCheckbox.selected());
-		SettingsConfig.setBoolean("show_carpet_commands", showCarpetCheckbox.selected());
-		SettingsConfig.setBoolean("show_fakeplayer_tab", showFakePlayerCheckbox.selected());
-		SettingsConfig.save();
-		this.minecraft.setScreen(null);
-		this.minecraft.setScreen(new CommandGUIScreen());
-	}
+    y += 45;
+    this.addRenderableWidget(Button.builder(
+        Component.translatable("screen.command-gui.settings.save"),
+        btn -> saveAndClose()
+    ).bounds(centerX - 102, y, 100, 20).build());
 
-	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-		super.render(guiGraphics, mouseX, mouseY, partialTick);
+    this.addRenderableWidget(Button.builder(
+        Component.translatable("screen.command-gui.back"),
+        btn -> this.minecraft.setScreen(parent)
+    ).bounds(centerX + 2, y, 100, 20).build());
+  }
 
-		int centerX = this.width / 2;
-		int centerY = this.height / 2;
+  /**
+   * Writes the state of all three checkboxes to {@link SettingsConfig}, saves to disk, then closes
+   * the current screen and reopens {@link CommandGUIScreen} to apply the new settings.
+   */
+  private void saveAndClose() {
+    SettingsConfig.setBoolean("show_vanilla_commands", showVanillaCheckbox.selected());
+    SettingsConfig.setBoolean("show_carpet_commands", showCarpetCheckbox.selected());
+    SettingsConfig.setBoolean("show_fakeplayer_tab", showFakePlayerCheckbox.selected());
+    SettingsConfig.save();
+    this.minecraft.setScreen(null);
+    this.minecraft.setScreen(new CommandGUIScreen());
+  }
 
-		guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 80, 0xFFFFFFFF);
-	}
+  @Override
+  public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    super.render(guiGraphics, mouseX, mouseY, partialTick);
+
+    int centerX = this.width / 2;
+    int centerY = this.height / 2;
+
+    guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 80, 0xFFFFFFFF);
+  }
 }
