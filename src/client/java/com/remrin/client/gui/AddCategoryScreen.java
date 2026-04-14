@@ -62,17 +62,17 @@ public class AddCategoryScreen extends BaseParentedScreen<CommandGUIScreen> {
     // Description
     guiGraphics.drawCenteredString(this.font,
         Component.translatable("screen.command-gui.add_category_desc"),
-        centerX, centerY - 40, 0x888888);
+        centerX, centerY - 40, 0xFF888888);
 
     // Label
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.category_name"),
-        centerX - 100, centerY - 32, 0xAAAAAA);
+        centerX - 100, centerY - 32, 0xFFAAAAAA);
 
     // Hint
     guiGraphics.drawCenteredString(this.font,
         Component.translatable("screen.command-gui.enter_to_save"),
-        centerX, centerY + 45, 0x888888);
+        centerX, centerY + 45, 0xFF888888);
   }
 
   @Override

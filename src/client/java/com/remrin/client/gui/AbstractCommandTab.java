@@ -201,6 +201,8 @@ public abstract class AbstractCommandTab implements Tab {
   /**
    * Rebuilds the command button list based on the current scroll offset and visible area. Buttons
    * are arranged in a COLUMNS-column grid; entries that fall below the bottom are not rendered.
+   * After each button is constructed, {@link #onCommandButtonBuilt(int, int, int, int, int)} is
+   * called so subclasses can add extra widgets (e.g., action icon buttons) aligned with it.
    */
   protected void rebuildButtons() {
     commandButtons.clear();
@@ -235,7 +237,22 @@ public abstract class AbstractCommandTab implements Tab {
 
       int btnWidth = colWidth - 4;
       commandButtons.add(buildCommandButton(index, btnX + 2, btnY, btnWidth, ITEM_HEIGHT - 2));
+      onCommandButtonBuilt(index, btnX + 2, btnY, btnWidth, ITEM_HEIGHT - 2);
     }
+  }
+
+  /**
+   * Called after each command button is built during {@link #rebuildButtons()}. Subclasses can
+   * override this to add extra widgets (e.g., edit/delete/move action buttons) positioned alongside
+   * the command button. The default implementation does nothing.
+   *
+   * @param index  filtered command index
+   * @param x      left edge of the command button
+   * @param y      top edge of the command button
+   * @param width  full column width minus padding (same value passed to buildCommandButton)
+   * @param height button height (same value passed to buildCommandButton)
+   */
+  protected void onCommandButtonBuilt(int index, int x, int y, int width, int height) {
   }
 
   public void scroll(double delta) {

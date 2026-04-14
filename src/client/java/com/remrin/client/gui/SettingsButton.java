@@ -8,13 +8,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 /**
- * Settings button widget that uses a custom gear icon texture instead of text; clicking it opens
+ * Settings button widget that uses a custom gear icon sprite instead of text; clicking it opens
  * {@link SettingsScreen}.
  */
 public class SettingsButton extends Button {
 
-  private static final Identifier SETTINGS_ICON = Identifier.parse(
-      "command-gui:textures/gui/settings.png");
+  /**
+   * Sprite ID — maps to {@code assets/command-gui/textures/gui/sprites/settings.png}, registered
+   * automatically in the GUI atlas (no explicit atlas JSON needed for the gui/sprites/ directory).
+   */
+  private static final Identifier SETTINGS_ICON = Identifier.parse("command-gui:settings");
 
   public SettingsButton(int x, int y, int width, int height, OnPress onPress) {
     super(x, y, width, height, Component.empty(), onPress, DEFAULT_NARRATION);
@@ -27,8 +30,7 @@ public class SettingsButton extends Button {
     int iconSize = 16;
     int iconX = this.getX() + (this.getWidth() - iconSize) / 2;
     int iconY = this.getY() + (this.getHeight() - iconSize) / 2;
-
-    guiGraphics.blit(RenderPipelines.GUI_TEXTURED, SETTINGS_ICON, iconX, iconY, 0, 0, iconSize,
-        iconSize, iconSize, iconSize);
+    guiGraphics.blitSprite(RenderPipelines.GUI_TEXTURED, SETTINGS_ICON,
+        iconX, iconY, iconSize, iconSize);
   }
 }

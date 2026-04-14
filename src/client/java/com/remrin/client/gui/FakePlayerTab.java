@@ -1,7 +1,9 @@
 package com.remrin.client.gui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -76,6 +78,8 @@ public class FakePlayerTab implements Tab {
   private final List<Button> modeButtons = new ArrayList<>();
   private final List<EditBox> intervalFields = new ArrayList<>();
   private final List<String> displayList = new ArrayList<>();
+  /** Snapshot of online PlayerInfo keyed by player name; rebuilt on every {@link #refresh()} call. */
+  private final Map<String, PlayerInfo> playerInfoCache = new HashMap<>();
   private ScreenRectangle area;
   private int scrollOffset = 0;
   private String searchText = "";
@@ -133,6 +137,15 @@ public class FakePlayerTab implements Tab {
     intervalFields.clear();
     displayList.clear();
 
+    // Rebuild PlayerInfo cache so renderFaces() can do O(1) lookups instead of O(n) per entry
+    playerInfoCache.clear();
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.getConnection() != null) {
+      for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
+        playerInfoCache.put(info.getProfile().name(), info);
+      }
+    }
+
     for (TimedTaskManager.TimedTask task : TimedTaskManager.getPendingSpawnTasks()) {
       if (searchText.isEmpty() || task.playerName.toLowerCase()
           .contains(searchText.toLowerCase())) {
@@ -140,14 +153,11 @@ public class FakePlayerTab implements Tab {
       }
     }
 
-    Minecraft mc = Minecraft.getInstance();
-    if (mc.getConnection() != null) {
-      for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-        String name = info.getProfile().name();
-        if (isFakePlayer(name) && !displayList.contains(name)) {
-          if (searchText.isEmpty() || name.toLowerCase().contains(searchText.toLowerCase())) {
-            displayList.add(name);
-          }
+    for (Map.Entry<String, PlayerInfo> entry : playerInfoCache.entrySet()) {
+      String name = entry.getKey();
+      if (CommandHelper.isFakePlayer(entry.getValue()) && !displayList.contains(name)) {
+        if (searchText.isEmpty() || name.toLowerCase().contains(searchText.toLowerCase())) {
+          displayList.add(name);
         }
       }
     }
@@ -205,15 +215,8 @@ public class FakePlayerTab implements Tab {
   }
 
   private boolean isOnlineFakePlayer(String name) {
-    Minecraft mc = Minecraft.getInstance();
-    if (mc.getConnection() != null) {
-      for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-        if (info.getProfile().name().equals(name) && CommandHelper.isFakePlayer(info)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    PlayerInfo info = playerInfoCache.get(name);
+    return info != null && CommandHelper.isFakePlayer(info);
   }
 
   private void selectPlayer(String playerName) {
@@ -432,7 +435,7 @@ public class FakePlayerTab implements Tab {
 
     for (String playerName : displayList) {
       if (isOnlineFakePlayer(playerName)) {
-        mc.player.connection.sendCommand("player " + playerName + " kill");
+        CommandHelper.sendCommand("/player " + playerName + " kill");
       }
     }
   }
@@ -606,19 +609,7 @@ public class FakePlayerTab implements Tab {
   }
 
   private PlayerInfo getPlayerInfo(String name) {
-    Minecraft mc = Minecraft.getInstance();
-    if (mc.getConnection() != null) {
-      for (PlayerInfo info : mc.getConnection().getListedOnlinePlayers()) {
-        if (info.getProfile().name().equals(name)) {
-          return info;
-        }
-      }
-    }
-    return null;
-  }
-
-  private boolean isFakePlayer(String name) {
-    return CommandHelper.isFakePlayer(name);
+    return playerInfoCache.get(name);
   }
 
   private void executeCommand(String command) {

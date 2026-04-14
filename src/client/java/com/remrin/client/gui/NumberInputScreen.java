@@ -85,7 +85,14 @@ public class NumberInputScreen extends BaseParentedScreen<Screen> {
     int startX = centerX - totalWidth / 2;
     int startY = centerY - 5;
 
-    for (int i = 0; i < quickValues.length; i++) {
+    // Clamp the number of visible quick-value rows so they don't push the close button off-screen.
+    // Reserve 34px below the last row: 10px gap + 20px close button + 4px bottom margin.
+    int availableForRows = this.height - startY - 34;
+    int maxRows = Math.max(1, availableForRows / (BUTTON_HEIGHT + 4));
+    int visibleRows = Math.min(rows, maxRows);
+    int visibleCount = Math.min(quickValues.length, visibleRows * BUTTONS_PER_ROW);
+
+    for (int i = 0; i < visibleCount; i++) {
       int value = quickValues[i];
       int col = i % BUTTONS_PER_ROW;
       int row = i / BUTTONS_PER_ROW;
@@ -98,7 +105,8 @@ public class NumberInputScreen extends BaseParentedScreen<Screen> {
       ).bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
     }
 
-    int closeBtnY = centerY + 10 + rows * (BUTTON_HEIGHT + 4);
+    int closeBtnY = Math.min(centerY + 10 + visibleRows * (BUTTON_HEIGHT + 4),
+        this.height - BUTTON_HEIGHT - 4);
     this.addRenderableWidget(Button.builder(
         Component.translatable("screen.command-gui.back"),
         btn -> this.minecraft.setScreen(parent)

@@ -1,6 +1,5 @@
 package com.remrin.client.gui;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -132,19 +131,14 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
   }
 
   private void spawnBatch() {
-    Minecraft mc = Minecraft.getInstance();
-    if (mc.player == null) {
-      return;
-    }
-
     if (useEnglishNames) {
       int n = Math.min(count, ENGLISH_NAMES.length);
       for (int i = 0; i < n; i++) {
-        mc.player.connection.sendCommand("player " + ENGLISH_NAMES[i] + " spawn");
+        CommandHelper.sendCommand("/player " + ENGLISH_NAMES[i] + " spawn");
       }
     } else {
       for (int i = 0; i < count; i++) {
-        mc.player.connection.sendCommand("player " + prefix + (startNum + i) + " spawn");
+        CommandHelper.sendCommand("/player " + prefix + (startNum + i) + " spawn");
       }
     }
     this.minecraft.setScreen(parent);

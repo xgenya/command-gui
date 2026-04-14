@@ -33,6 +33,9 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
   private static final int COLUMNS = 4;
   private static final int PADDING = 10;
   private static final int FACE_SIZE = 8;
+  private static final int LIST_START_Y = 40;
+  private static final int LIST_BOTTOM_MARGIN = 50;
+  private static final int ITEM_GAP = 5;
   private final String commandTemplate;
   private final Consumer<String> onPlayerSelected;
   private final Component titleText;
@@ -41,6 +44,11 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
   private List<PlayerInfo> players = new ArrayList<>();
   private int scrollOffset = 0;
   private boolean initialized = false;
+
+  // Cached layout values, updated by computeLayout() in init() and mouseScrolled()
+  private int layoutStartX;
+  private int layoutMaxRowsVisible;
+  private int layoutMaxItemsVisible;
   public PlayerSelectorScreen(Screen parent, Component title, String commandTemplate) {
     this(parent, title, commandTemplate, FilterMode.EXCLUDE_SELF, null);
   }
@@ -71,6 +79,7 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
       loadPlayers();
       initialized = true;
     }
+    computeLayout();
     buildPlayerButtons();
 
     int closeBtnY = this.height - 28;
@@ -78,6 +87,15 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
         Component.translatable("screen.command-gui.back"),
         button -> this.minecraft.setScreen(parent)
     ).bounds(this.width / 2 - 75, closeBtnY, 150, 20).build());
+  }
+
+  /** Recomputes shared layout values from the current screen dimensions. */
+  private void computeLayout() {
+    int listHeight = this.height - LIST_START_Y - LIST_BOTTOM_MARGIN;
+    layoutMaxRowsVisible = Math.max(1, listHeight / ITEM_HEIGHT);
+    layoutMaxItemsVisible = layoutMaxRowsVisible * COLUMNS;
+    int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * ITEM_GAP;
+    layoutStartX = (this.width - totalWidth) / 2;
   }
 
   /**
@@ -113,15 +131,7 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
   }
 
   private void buildPlayerButtons() {
-    int startY = 40;
-    int listHeight = this.height - startY - 50;
-    int maxRowsVisible = listHeight / ITEM_HEIGHT;
-    int maxItemsVisible = maxRowsVisible * COLUMNS;
-
-    int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * 5;
-    int startX = (this.width - totalWidth) / 2;
-
-    for (int i = 0; i < Math.min(maxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
+    for (int i = 0; i < Math.min(layoutMaxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
       int index = i + scrollOffset * COLUMNS;
       if (index >= players.size()) {
         break;
@@ -132,8 +142,8 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
 
       int col = i % COLUMNS;
       int row = i / COLUMNS;
-      int x = startX + col * (ITEM_WIDTH + 5);
-      int y = startY + row * ITEM_HEIGHT;
+      int x = layoutStartX + col * (ITEM_WIDTH + ITEM_GAP);
+      int y = LIST_START_Y + row * ITEM_HEIGHT;
 
       Button playerBtn = Button.builder(
           Component.literal("   " + playerName),
@@ -170,16 +180,13 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
 
   @Override
   public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-    int startY = 40;
-    int listHeight = this.height - startY - 50;
-    int maxRowsVisible = listHeight / ITEM_HEIGHT;
     int totalRows = (players.size() + COLUMNS - 1) / COLUMNS;
 
-    if (totalRows > maxRowsVisible) {
+    if (totalRows > layoutMaxRowsVisible) {
       if (scrollY > 0 && scrollOffset > 0) {
         scrollOffset--;
         rebuildPlayerButtons();
-      } else if (scrollY < 0 && scrollOffset < totalRows - maxRowsVisible) {
+      } else if (scrollY < 0 && scrollOffset < totalRows - layoutMaxRowsVisible) {
         scrollOffset++;
         rebuildPlayerButtons();
       }
@@ -201,15 +208,7 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
 
     guiGraphics.drawCenteredString(this.font, this.titleText, this.width / 2, 15, 0xFFFFFFFF);
 
-    int startY = 40;
-    int listHeight = this.height - startY - 50;
-    int maxRowsVisible = listHeight / ITEM_HEIGHT;
-    int maxItemsVisible = maxRowsVisible * COLUMNS;
-
-    int totalWidth = COLUMNS * ITEM_WIDTH + (COLUMNS - 1) * 5;
-    int startX = (this.width - totalWidth) / 2;
-
-    for (int i = 0; i < Math.min(maxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
+    for (int i = 0; i < Math.min(layoutMaxItemsVisible, players.size() - scrollOffset * COLUMNS); i++) {
       int index = i + scrollOffset * COLUMNS;
       if (index >= players.size()) {
         break;
@@ -219,8 +218,8 @@ public class PlayerSelectorScreen extends BaseParentedScreen<Screen> {
 
       int col = i % COLUMNS;
       int row = i / COLUMNS;
-      int x = startX + col * (ITEM_WIDTH + 5);
-      int y = startY + row * ITEM_HEIGHT;
+      int x = layoutStartX + col * (ITEM_WIDTH + ITEM_GAP);
+      int y = LIST_START_Y + row * ITEM_HEIGHT;
 
       int btnCenterY = y + (ITEM_HEIGHT - 4) / 2;
       int faceY = btnCenterY - FACE_SIZE / 2;

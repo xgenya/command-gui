@@ -23,6 +23,10 @@ public class CoordinateInputScreen extends BaseParentedScreen<Screen> {
   private EditBox yField;
   private EditBox zField;
 
+  // Layout constants shared between init() and render()
+  private static final int FIELD_WIDTH = 60;
+  private static final int FIELD_GAP = 5;
+
   public CoordinateInputScreen(Screen parent, Component title, String commandTemplate) {
     super(title, parent);
     this.commandTemplate = commandTemplate;
@@ -34,26 +38,24 @@ public class CoordinateInputScreen extends BaseParentedScreen<Screen> {
 
     int centerX = this.width / 2;
     int centerY = this.height / 2;
-    int fieldWidth = 60;
-    int gap = 5;
-    int totalWidth = fieldWidth * 3 + gap * 2;
+    int totalWidth = FIELD_WIDTH * 3 + FIELD_GAP * 2;
     int startX = centerX - totalWidth / 2;
 
-    xField = new EditBox(this.font, startX, centerY - 30, fieldWidth, 20, Component.literal("X"));
+    xField = new EditBox(this.font, startX, centerY - 30, FIELD_WIDTH, 20, Component.literal("X"));
     xField.setMaxLength(10);
     xField.setHint(Component.literal("X"));
     xField.setFilter(this::isValidCoordInput);
     this.addRenderableWidget(xField);
     this.setInitialFocus(xField);
 
-    yField = new EditBox(this.font, startX + fieldWidth + gap, centerY - 30, fieldWidth, 20,
+    yField = new EditBox(this.font, startX + FIELD_WIDTH + FIELD_GAP, centerY - 30, FIELD_WIDTH, 20,
         Component.literal("Y"));
     yField.setMaxLength(10);
     yField.setHint(Component.literal("Y"));
     yField.setFilter(this::isValidCoordInput);
     this.addRenderableWidget(yField);
 
-    zField = new EditBox(this.font, startX + (fieldWidth + gap) * 2, centerY - 30, fieldWidth, 20,
+    zField = new EditBox(this.font, startX + (FIELD_WIDTH + FIELD_GAP) * 2, centerY - 30, FIELD_WIDTH, 20,
         Component.literal("Z"));
     zField.setMaxLength(10);
     zField.setHint(Component.literal("Z"));
@@ -184,14 +186,12 @@ public class CoordinateInputScreen extends BaseParentedScreen<Screen> {
 
     guiGraphics.drawCenteredString(this.font, this.title, centerX, centerY - 60, 0xFFFFFFFF);
 
-    int fieldWidth = 60;
-    int gap = 5;
-    int totalWidth = fieldWidth * 3 + gap * 2;
+    int totalWidth = FIELD_WIDTH * 3 + FIELD_GAP * 2;
     int startX = centerX - totalWidth / 2;
 
     guiGraphics.drawString(this.font, "X", startX, centerY - 42, 0xFFFF5555);
-    guiGraphics.drawString(this.font, "Y", startX + fieldWidth + gap, centerY - 42, 0xFF55FF55);
-    guiGraphics.drawString(this.font, "Z", startX + (fieldWidth + gap) * 2, centerY - 42,
+    guiGraphics.drawString(this.font, "Y", startX + FIELD_WIDTH + FIELD_GAP, centerY - 42, 0xFF55FF55);
+    guiGraphics.drawString(this.font, "Z", startX + (FIELD_WIDTH + FIELD_GAP) * 2, centerY - 42,
         0xFF5555FF);
 
     guiGraphics.drawCenteredString(this.font,

@@ -146,69 +146,47 @@ public class CustomCommandTab extends AbstractCommandTab {
   @Override
   protected void rebuildButtons() {
     extraButtons.clear();
-		if (area == null) {
-			return;
-		}
+    super.rebuildButtons();
+  }
 
-    int commandAreaLeft = getCommandAreaLeft();
-    int commandAreaWidth = getCommandAreaWidth();
-    int colWidth = commandAreaWidth / COLUMNS;
-    int y = area.top();
-    int maxY = area.bottom();
+  /**
+   * Called by the base class after each command button is built. Creates the edit, delete, and move
+   * action buttons positioned to the right of the command button.
+   */
+  @Override
+  protected void onCommandButtonBuilt(int index, int x, int y, int width, int height) {
+    FilteredCommand cmd = filteredCommands.get(index);
+    final String cmdName = cmd.name();
+    final CommandConfig.CommandEntry cmdEntry = cmd.entry();
 
-    int startIndex = scrollOffset * COLUMNS;
-    int visibleRows = area.height() / ITEM_HEIGHT;
-    int maxItems = visibleRows * COLUMNS;
-    int count = getFilteredCommandCount();
+    int cmdBtnWidth = width - ACTION_BTNS_TOTAL;
+    int actionX = x + cmdBtnWidth + 1;
 
-    for (int i = 0; i < Math.min(maxItems, count - startIndex); i++) {
-      int index = startIndex + i;
-			if (index >= count) {
-				break;
-			}
+    // Edit button
+    ItemIconButton editBtn = new ItemIconButton(
+        actionX, y, ACTION_BTN_WIDTH, height,
+        EDIT_ICON,
+        Component.translatable("screen.command-gui.edit"),
+        b -> editCommand(cmdName, cmdEntry));
+    extraButtons.add(editBtn);
+    actionX += ACTION_BTN_WIDTH + 1;
 
-      int col = i % COLUMNS;
-      int row = i / COLUMNS;
-      int btnX = commandAreaLeft + col * colWidth;
-      int btnY = y + row * ITEM_HEIGHT;
-			if (btnY + ITEM_HEIGHT > maxY) {
-				break;
-			}
+    // Delete button
+    ItemIconButton deleteBtn = new ItemIconButton(
+        actionX, y, ACTION_BTN_WIDTH, height,
+        DELETE_ICON,
+        Component.translatable("screen.command-gui.delete"),
+        b -> deleteCommand(cmdName));
+    extraButtons.add(deleteBtn);
+    actionX += ACTION_BTN_WIDTH + 1;
 
-      int btnWidth = colWidth - 4;
-      int cmdBtnWidth = btnWidth - ACTION_BTNS_TOTAL;
-      int actionX = btnX + 2 + cmdBtnWidth + 1;
-
-      FilteredCommand cmd = filteredCommands.get(index);
-      final String cmdName = cmd.name();
-      final CommandConfig.CommandEntry cmdEntry = cmd.entry();
-
-      // Edit button
-      ItemIconButton editBtn = new ItemIconButton(
-          actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2,
-          EDIT_ICON,
-          Component.translatable("screen.command-gui.edit"),
-          b -> editCommand(cmdName, cmdEntry));
-      extraButtons.add(editBtn);
-      actionX += ACTION_BTN_WIDTH + 1;
-
-      // Delete button
-      ItemIconButton deleteBtn = new ItemIconButton(
-          actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2,
-          DELETE_ICON,
-          Component.translatable("screen.command-gui.delete"),
-          b -> deleteCommand(cmdName));
-      extraButtons.add(deleteBtn);
-      actionX += ACTION_BTN_WIDTH + 1;
-
-      // Move button
-      ItemIconButton moveBtn = new ItemIconButton(
-          actionX, btnY, ACTION_BTN_WIDTH, ITEM_HEIGHT - 2,
-          MOVE_ICON,
-          Component.translatable("screen.command-gui.move"),
-          b -> moveCommand(cmdName));
-      extraButtons.add(moveBtn);
-    }
+    // Move button
+    ItemIconButton moveBtn = new ItemIconButton(
+        actionX, y, ACTION_BTN_WIDTH, height,
+        MOVE_ICON,
+        Component.translatable("screen.command-gui.move"),
+        b -> moveCommand(cmdName));
+    extraButtons.add(moveBtn);
   }
 
   /**

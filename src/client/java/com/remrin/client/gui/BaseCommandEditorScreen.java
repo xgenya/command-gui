@@ -9,6 +9,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -67,6 +68,20 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
   protected EditBox commandField;
   protected CommandSuggestions commandSuggestions;
   private Button addToListButton;
+
+  // Cached label Components and widths — computed once in init(), reused every frame
+  private Component cachedLabelName;
+  private Component cachedLabelDesc;
+  private Component cachedLabelPlaceholder;
+  private Component cachedLabelCommands;
+  private Component cachedLabelCommand;
+  private Component cachedLabelEnterSave;
+  private int cachedLabelNameWidth;
+  private int cachedLabelDescWidth;
+  private int cachedLabelPlaceholderWidth;
+  private int cachedLabelCommandsWidth;
+  // Placeholder description split into display lines — recomputed on init/resize only
+  private List<FormattedCharSequence> cachedPlaceholderDescLines;
 
   protected BaseCommandEditorScreen(Component title, CommandGUIScreen parent) {
     super(title, parent);
@@ -148,6 +163,21 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
   @Override
   protected void init() {
     super.init();
+
+    // Cache label Components and their widths once per init/resize
+    cachedLabelName        = Component.translatable("screen.command-gui.name");
+    cachedLabelDesc        = Component.translatable("screen.command-gui.description");
+    cachedLabelPlaceholder = Component.translatable("screen.command-gui.placeholder_label");
+    cachedLabelCommands    = Component.translatable("screen.command-gui.commands_label");
+    cachedLabelCommand     = Component.translatable("screen.command-gui.command");
+    cachedLabelEnterSave   = Component.translatable("screen.command-gui.enter_to_save");
+    cachedLabelNameWidth        = this.font.width(cachedLabelName);
+    cachedLabelDescWidth        = this.font.width(cachedLabelDesc);
+    cachedLabelPlaceholderWidth = this.font.width(cachedLabelPlaceholder);
+    cachedLabelCommandsWidth    = this.font.width(cachedLabelCommands);
+    int maxDescWidth = this.width - 20;
+    cachedPlaceholderDescLines  = this.font.split(
+        Component.translatable("screen.command-gui.placeholder_desc"), maxDescWidth);
 
     int centerX = this.width / 2;
     int centerY = this.height / 2 + Y_OFFSET;
@@ -390,32 +420,24 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
     guiGraphics.drawCenteredString(this.font, this.title, centerX, getTitleY(centerY), 0xFFFFFFFF);
 
     int currentY = getFieldStartY(centerY);
-    guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.name"),
-        labelX - this.font.width(Component.translatable("screen.command-gui.name")), currentY + 4,
-        0xFFAAAAAA);
+    guiGraphics.drawString(this.font, cachedLabelName,
+        labelX - cachedLabelNameWidth, currentY + 4, 0xFFAAAAAA);
 
     currentY += ROW_GAP;
-    guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.description"),
-        labelX - this.font.width(Component.translatable("screen.command-gui.description")),
-        currentY + 4, 0xFFAAAAAA);
+    guiGraphics.drawString(this.font, cachedLabelDesc,
+        labelX - cachedLabelDescWidth, currentY + 4, 0xFFAAAAAA);
 
     currentY = renderExtraLabel(guiGraphics, labelX, currentY);
 
     currentY += ROW_GAP + 4;
-    guiGraphics.drawString(this.font,
-        Component.translatable("screen.command-gui.placeholder_label"),
-        labelX - this.font.width(Component.translatable("screen.command-gui.placeholder_label")),
-        currentY + 4, 0xFFAAAAAA);
+    guiGraphics.drawString(this.font, cachedLabelPlaceholder,
+        labelX - cachedLabelPlaceholderWidth, currentY + 4, 0xFFAAAAAA);
 
-    // Placeholder description text
+    // Placeholder description text (pre-split in init())
     int rows = (TYPE_KEYS.length + PLACEHOLDER_BTNS_PER_ROW - 1) / PLACEHOLDER_BTNS_PER_ROW;
     int afterPlaceholders = currentY + rows * (PLACEHOLDER_BTN_HEIGHT + 2) + 4;
-    Component placeholderDesc = Component.translatable("screen.command-gui.placeholder_desc");
-    int maxDescWidth = this.width - 20;
-    List<net.minecraft.util.FormattedCharSequence> descLines = this.font.split(placeholderDesc,
-        maxDescWidth);
     int descY = afterPlaceholders;
-    for (net.minecraft.util.FormattedCharSequence line : descLines) {
+    for (FormattedCharSequence line : cachedPlaceholderDescLines) {
       guiGraphics.drawString(this.font, line, 10, descY, 0xFF666666);
       descY += 10;
     }
@@ -423,9 +445,8 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
     // Command list label and items
     if (!commandList.isEmpty()) {
       descY += 2;
-      guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.commands_label"),
-          labelX - this.font.width(Component.translatable("screen.command-gui.commands_label")),
-          descY + 2, 0xFFAAAAAA);
+      guiGraphics.drawString(this.font, cachedLabelCommands,
+          labelX - cachedLabelCommandsWidth, descY + 2, 0xFFAAAAAA);
       for (int i = 0; i < commandList.size(); i++) {
         String cmd = commandList.get(i);
         String display = this.font.plainSubstrByWidth(cmd, CONTENT_WIDTH - 20);
@@ -435,11 +456,9 @@ public abstract class BaseCommandEditorScreen extends BaseParentedScreen<Command
 
     // Bottom command area
     guiGraphics.fill(2, this.height - 14, this.width - 2, this.height - 2, 0x80000000);
-    guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.command"),
-        4, this.height - 24, 0xFFAAAAAA);
+    guiGraphics.drawString(this.font, cachedLabelCommand, 4, this.height - 24, 0xFFAAAAAA);
 
-    guiGraphics.drawCenteredString(this.font,
-        Component.translatable("screen.command-gui.enter_to_save"),
+    guiGraphics.drawCenteredString(this.font, cachedLabelEnterSave,
         centerX, this.height - 34, 0xFF888888);
 
     this.commandSuggestions.render(guiGraphics, mouseX, mouseY);

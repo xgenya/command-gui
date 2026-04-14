@@ -32,14 +32,13 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
   private static final int MARGIN = 16;
   private static final int INNER_PAD = 10;
   private static final int FIELD_WIDTH = 150;
-  private static final int FIELD_HEIGHT = 16;
-  private static final int ROW_GAP = 36;
+  private static final int FIELD_HEIGHT = 14;       // compact: was 16
   private static final int COL_GAP = 32;
   private static final int COORD_GAP = 8;
   private static final int ROT_GAP = 28;
   private static final int XYZ_FIELD_WIDTH = (FIELD_WIDTH - 2 * COORD_GAP) / 3; // 44
   private static final int YAW_PITCH_FIELD_WIDTH = (FIELD_WIDTH - ROT_GAP) / 2;  // 61
-  private static final int ACTION_BTN_HEIGHT = 16;
+  private static final int ACTION_BTN_HEIGHT = 14;  // compact: was 16
   private static final int ACTION_BTN_GAP = 4;
   private static final int ACTIONS_PER_ROW = 3;
   private static final int ACTION_BTN_WIDTH =
@@ -49,7 +48,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
   private static final int LABEL_COLOR = 0xFFAAAAAA;
   private static final int BORDER_COLOR = 0xFF555555;
   private static final int SELECTED_OVERLAY_COLOR = 0x6600CC00;
-  private static final int LABEL_HEIGHT = 12; // height reserved for label above field
+  private static final int LABEL_HEIGHT = 10; // height reserved for label above field; was 12
 
   private static final String[] DIMENSIONS = {
       "minecraft:overworld",
@@ -152,15 +151,12 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
    * Currently selected game mode index
    */
   private int gamemodeIndex = 0;
-  /**
-   * Y coordinate of the save button, used for dynamic layout calculation
-   */
-  private int lastSaveBtnY = -1;
-
   // Layout coordinates (computed in init())
   private int leftColX;
   private int rightColX;
   private int contentStartY;
+  /** Row gap between successive left-column rows; dynamically computed in init(). */
+  private int rowGap;
 
   public AddFakePlayerCommandScreen(CommandGUIScreen parent, String initialCategoryId) {
     this(parent, initialCategoryId, null, null);
@@ -182,7 +178,16 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     int contentW = FIELD_WIDTH * 2 + COL_GAP;
     leftColX = this.width / 2 - contentW / 2;
     rightColX = leftColX + FIELD_WIDTH + COL_GAP;
-    contentStartY = MARGIN + INNER_PAD + 18;
+
+    // Dynamic vertical layout: title at y=8, content starts just below it.
+    // rowGap shrinks on small screens so all 8 left-column rows fit above the save buttons.
+    contentStartY = 18;
+    int saveBtnY = this.height - 24;
+    // 8 rows with 7 inter-row gaps; last row occupies LABEL_HEIGHT + FIELD_HEIGHT.
+    // Minimum rowGap = LABEL_HEIGHT + FIELD_HEIGHT so labels never overlap the field above.
+    // Constraint: contentStartY + 7*rowGap + (LABEL_HEIGHT+FIELD_HEIGHT) ≤ saveBtnY - 2
+    int maxAllowedRowGap = (saveBtnY - 2 - contentStartY - LABEL_HEIGHT - FIELD_HEIGHT) / 7;
+    rowGap = Math.min(36, Math.max(LABEL_HEIGHT + FIELD_HEIGHT, maxAllowedRowGap));
 
     int leftY = contentStartY + LABEL_HEIGHT;
 
@@ -196,7 +201,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     this.addRenderableWidget(nameField);
 
 // Description (label above)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     descriptionField = new EditBox(this.font, leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT,
         Component.translatable("screen.command-gui.description"));
     descriptionField.setMaxLength(100);
@@ -204,7 +209,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     this.addRenderableWidget(descriptionField);
 
 // Fake Player Name (label above)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     fakePlayerNameField = new EditBox(this.font, leftColX, leftY, FIELD_WIDTH, FIELD_HEIGHT,
         Component.translatable("screen.command-gui.fakeplayer.playername"));
     fakePlayerNameField.setMaxLength(20);
@@ -214,7 +219,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     this.addRenderableWidget(fakePlayerNameField);
 
 // Fill current position button (label above)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     fillCurrentPosButton = Button.builder(
         Component.translatable("screen.command-gui.fakeplayer.pos.fill_current"),
         btn -> fillCurrentPosition()
@@ -222,7 +227,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     this.addRenderableWidget(fillCurrentPosButton);
 
 // XYZ row — three equal-width fields (X Y Z labels above each field)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     xField = new EditBox(this.font, leftColX, leftY, XYZ_FIELD_WIDTH, FIELD_HEIGHT,
         Component.literal("X"));
     xField.setMaxLength(12);
@@ -242,7 +247,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     this.addRenderableWidget(zField);
 
 // Yaw / Pitch row (labels above each field)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     yawField = new EditBox(this.font, leftColX, leftY, YAW_PITCH_FIELD_WIDTH, FIELD_HEIGHT,
         Component.literal("Yaw"));
     yawField.setMaxLength(10);
@@ -256,7 +261,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     this.addRenderableWidget(pitchField);
 
 // Dimension buttons (3 buttons in a row)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     dimensionButtons.clear();
     int dimensionBtnWidth = (FIELD_WIDTH - 2 * ACTION_BTN_GAP) / 3;
     for (int i = 0; i < DIMENSIONS.length; i++) {
@@ -271,7 +276,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     }
 
 // Gamemode buttons (4 buttons in a row)
-    leftY += ROW_GAP;
+    leftY += rowGap;
     gamemodeButtons.clear();
     int gamemodeBtnWidth = (FIELD_WIDTH - 3 * ACTION_BTN_GAP) / 4;
     for (int i = 0; i < GAMEMODES.length; i++) {
@@ -303,6 +308,20 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
       descriptionField.setValue(editingEntry.description != null ? editingEntry.description : "");
       parseExistingCommands(editingEntry.getCommands());
     }
+
+    // Save / Cancel buttons (bottom of screen, created here so they survive partial rebuilds)
+    int contentCenterX = leftColX + (FIELD_WIDTH * 2 + COL_GAP) / 2;
+    saveButton = Button.builder(
+        Component.translatable("screen.command-gui.save"),
+        btn -> saveAndClose()
+    ).bounds(contentCenterX - 102, this.height - 24, 100, 20).build();
+    this.addRenderableWidget(saveButton);
+
+    cancelButton = Button.builder(
+        Component.translatable("screen.command-gui.cancel"),
+        btn -> this.minecraft.setScreen(parent)
+    ).bounds(contentCenterX + 2, this.height - 24, 100, 20).build();
+    this.addRenderableWidget(cancelButton);
 
     updateActionButtonColors();
   }
@@ -451,7 +470,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
       configRemoveButtons.add(removeBtn);
       this.addRenderableWidget(removeBtn);
 
-      currentY += ROW_GAP;
+      currentY += rowGap;
     }
 
     addConfigButton = Button.builder(
@@ -720,7 +739,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
     super.render(guiGraphics, mouseX, mouseY, partialTick);
 
 // Title
-    guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, MARGIN + 6, 0xFFFFFFFF);
+    guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 8, 0xFFFFFFFF);
 
 // === Left column labels (above each field) ===
     int currentY = contentStartY;
@@ -730,24 +749,24 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
         leftColX, currentY, LABEL_COLOR);
 
 // Description label
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.description"),
         leftColX, currentY, LABEL_COLOR);
 
 // Fake Player Name label
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.fakeplayer.playername"),
         leftColX, currentY, LABEL_COLOR);
 
 // Spawn At label
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.fakeplayer.spawn_at"),
         leftColX, currentY, LABEL_COLOR);
 
 // XYZ labels (above each field)
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font, "X", leftColX, currentY, 0xFFFF5555);
     guiGraphics.drawString(this.font, "Y", leftColX + XYZ_FIELD_WIDTH + COORD_GAP, currentY,
         0xFF55FF55);
@@ -755,19 +774,19 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
         0xFF5555FF);
 
 // Yaw/Pitch labels (above each field)
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font, "Yaw", leftColX, currentY, LABEL_COLOR);
     guiGraphics.drawString(this.font, "Pitch", leftColX + YAW_PITCH_FIELD_WIDTH + ROT_GAP, currentY,
         LABEL_COLOR);
 
 // Dimension label (above buttons)
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.fakeplayer.dimension"),
         leftColX, currentY, LABEL_COLOR);
 
 // Gamemode label (above buttons)
-    currentY += ROW_GAP;
+    currentY += rowGap;
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.fakeplayer.gamemode"),
         leftColX, currentY, LABEL_COLOR);
@@ -811,98 +830,68 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
       }
     }
 
-// === Command preview (spanning full content width, with border) ===
+// === Command preview (right column, below config section) ===
     List<String> commands = buildCommands();
-    int configEndY = configStartY + configCommands.size() * ROW_GAP + 20;
+    int configEndY = configStartY + configCommands.size() * rowGap + 20;
 
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.fakeplayer.config_desc"),
         rightColX, configEndY + 2, 0xFF888888);
 
-    int contentRight = rightColX + FIELD_WIDTH;
-    int contentCenterX = leftColX + (contentRight - leftColX) / 2;
-
-// Calculate preview area - position it below both columns with extra spacing
-    int leftColEndY = contentStartY + LABEL_HEIGHT + ROW_GAP * 8
-        + FIELD_HEIGHT; // After gamemode buttons (8 rows)
-    int previewStartY = Math.max(configEndY + 24, leftColEndY + 16);
-
-// Preview label (left aligned)
-    int previewBoxX = leftColX;
-    int previewBoxW = contentRight - leftColX;
-    guiGraphics.drawString(this.font,
-        Component.translatable("screen.command-gui.fakeplayer.command_preview"),
-        previewBoxX, previewStartY, 0xFF888888);
+    // Place preview in the right column area below the config section.
+    // The right column ends much sooner than the left column, leaving room here
+    // even on small logical screens (e.g. 480×270 at Default/Auto scale on 1080p).
+    int previewAreaTop = configEndY + 12;
+    int saveBtnTopY = this.height - 24;
+    if (previewAreaTop + 20 < saveBtnTopY - 4) {
+      int previewBoxX = rightColX;
+      int previewBoxW = FIELD_WIDTH;
+      guiGraphics.drawString(this.font,
+          Component.translatable("screen.command-gui.fakeplayer.command_preview"),
+          previewBoxX, previewAreaTop, 0xFF888888);
 
 // Calculate total lines needed for preview (with word wrap)
-    int previewMaxW = previewBoxW - 8;
-    List<String> wrappedLines = new ArrayList<>();
-    for (String cmd : commands) {
-      if (this.font.width(cmd) <= previewMaxW) {
-        wrappedLines.add(cmd);
-      } else {
-        String remaining = cmd;
-        while (!remaining.isEmpty()) {
-          String line = this.font.plainSubstrByWidth(remaining, previewMaxW);
-          if (line.isEmpty()) {
-            line = remaining.substring(0, 1);
+      int previewMaxW = previewBoxW - 8;
+      List<String> wrappedLines = new ArrayList<>();
+      for (String cmd : commands) {
+        if (this.font.width(cmd) <= previewMaxW) {
+          wrappedLines.add(cmd);
+        } else {
+          String remaining = cmd;
+          while (!remaining.isEmpty()) {
+            String line = this.font.plainSubstrByWidth(remaining, previewMaxW);
+            if (line.isEmpty()) {
+              line = remaining.substring(0, 1);
+            }
+            wrappedLines.add(line);
+            remaining = remaining.substring(line.length());
           }
-          wrappedLines.add(line);
-          remaining = remaining.substring(line.length());
         }
       }
-    }
 
-// Preview content area with border
-    int previewBoxY = previewStartY + 12;
-    int previewBoxHeight = Math.max(wrappedLines.size() * 10 + 8, 28);
+// Preview content area with border (height clamped to available space)
+      int previewBoxY = previewAreaTop + 10;
+      int maxPreviewH = saveBtnTopY - 4 - previewBoxY;
+      int previewBoxHeight = Math.min(Math.max(wrappedLines.size() * 9 + 6, 20), maxPreviewH);
 
 // Draw border
-    guiGraphics.fill(previewBoxX, previewBoxY, previewBoxX + previewBoxW, previewBoxY + 1,
-        BORDER_COLOR);
-    guiGraphics.fill(previewBoxX, previewBoxY + previewBoxHeight - 1, previewBoxX + previewBoxW,
-        previewBoxY + previewBoxHeight, BORDER_COLOR);
-    guiGraphics.fill(previewBoxX, previewBoxY, previewBoxX + 1, previewBoxY + previewBoxHeight,
-        BORDER_COLOR);
-    guiGraphics.fill(previewBoxX + previewBoxW - 1, previewBoxY, previewBoxX + previewBoxW,
-        previewBoxY + previewBoxHeight, BORDER_COLOR);
+      guiGraphics.fill(previewBoxX, previewBoxY, previewBoxX + previewBoxW, previewBoxY + 1,
+          BORDER_COLOR);
+      guiGraphics.fill(previewBoxX, previewBoxY + previewBoxHeight - 1, previewBoxX + previewBoxW,
+          previewBoxY + previewBoxHeight, BORDER_COLOR);
+      guiGraphics.fill(previewBoxX, previewBoxY, previewBoxX + 1, previewBoxY + previewBoxHeight,
+          BORDER_COLOR);
+      guiGraphics.fill(previewBoxX + previewBoxW - 1, previewBoxY, previewBoxX + previewBoxW,
+          previewBoxY + previewBoxHeight, BORDER_COLOR);
 
-// Draw preview commands (left aligned, with wrap)
-    int previewY = previewBoxY + 4;
-    for (int i = 0; i < wrappedLines.size(); i++) {
-      guiGraphics.drawString(this.font, wrappedLines.get(i), previewBoxX + 4, previewY + i * 10,
-          0xFF55FF55);
-    }
-
-// Save / Cancel buttons (fixed at bottom of screen)
-    int saveBtnY = this.height - MARGIN - INNER_PAD - 24;
-    renderSaveCancel(saveBtnY);
-  }
-
-  private void renderSaveCancel(int saveBtnY) {
-    if (saveBtnY != lastSaveBtnY) {
-      if (saveButton != null) {
-        this.removeWidget(saveButton);
+// Draw preview commands (left aligned, with wrap, clipped to box)
+      int previewY = previewBoxY + 3;
+      for (int i = 0; i < wrappedLines.size(); i++) {
+        int lineY = previewY + i * 9;
+        if (lineY + 9 > previewBoxY + previewBoxHeight - 2) break;
+        guiGraphics.drawString(this.font, wrappedLines.get(i), previewBoxX + 4, lineY,
+            0xFF55FF55);
       }
-      if (cancelButton != null) {
-        this.removeWidget(cancelButton);
-      }
-
-// Center save/cancel within the two-column content area
-      int contentCenterX = leftColX + (FIELD_WIDTH * 2 + COL_GAP) / 2;
-      saveButton = Button.builder(
-          Component.translatable("screen.command-gui.save"),
-          btn -> saveAndClose()
-      ).bounds(contentCenterX - 102, saveBtnY, 100, 20).build();
-      this.addRenderableWidget(saveButton);
-
-      cancelButton = Button.builder(
-          Component.translatable("screen.command-gui.cancel"),
-          btn -> this.minecraft.setScreen(parent)
-      ).bounds(contentCenterX + 2, saveBtnY, 100, 20).build();
-      this.addRenderableWidget(cancelButton);
-
-      lastSaveBtnY = saveBtnY;
     }
   }
 
