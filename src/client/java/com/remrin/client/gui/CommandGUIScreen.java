@@ -2,6 +2,7 @@ package com.remrin.client.gui;
 
 import com.remrin.client.config.PresetConfig;
 import com.remrin.client.config.SettingsConfig;
+import com.remrin.client.sync.ServerCommandStore;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphics;
@@ -57,6 +58,7 @@ public class CommandGUIScreen extends Screen {
   private CustomCommandTab customTab;
   private FakePlayerTab fakePlayerTab;
   private List<PresetCommandTab> presetTabs = new ArrayList<>();
+  private ServerCommandTab serverCommandTab;
   private EditBox searchField;
   private Button addButton;
   private Button addFakePlayerButton;
@@ -152,6 +154,18 @@ public class CommandGUIScreen extends Screen {
       builder.addTabs(tab);
     }
 
+    // Add server command tab if data has been received from eun_carpet
+    if (ServerCommandStore.hasData()) {
+      this.serverCommandTab = new ServerCommandTab(this);
+      this.serverCommandTab.setOnCategoryChanged(
+          () -> removeTabButtons(serverCommandTab),
+          () -> addTabButtons(serverCommandTab)
+      );
+      builder.addTabs(this.serverCommandTab);
+    } else {
+      this.serverCommandTab = null;
+    }
+
     this.tabNavigationBar = builder.build();
     this.addRenderableWidget(this.tabNavigationBar);
     this.tabNavigationBar.arrangeElements();
@@ -236,6 +250,9 @@ public class CommandGUIScreen extends Screen {
     this.fakePlayerTab.doLayout(fakePlayerArea);
     for (PresetCommandTab tab : presetTabs) {
       tab.doLayout(tabArea);
+    }
+    if (serverCommandTab != null) {
+      serverCommandTab.doLayout(tabArea);
     }
 
     addTabButtons(tabManager.getCurrentTab());
@@ -331,6 +348,9 @@ public class CommandGUIScreen extends Screen {
       for (PresetCommandTab tab : presetTabs) {
         tab.doLayout(tabArea);
       }
+      if (serverCommandTab != null) {
+        serverCommandTab.doLayout(tabArea);
+      }
       addTabButtons(currentTab);
     }
   }
@@ -363,6 +383,17 @@ public class CommandGUIScreen extends Screen {
             addTabButtons(presetTab);
           }
           break;
+        }
+      }
+      if (currentTab == serverCommandTab && serverCommandTab != null) {
+        if (serverCommandTab.isInCategoryArea(mouseX, mouseY)) {
+          removeTabButtons(serverCommandTab);
+          serverCommandTab.scrollCategory(scrollY);
+          addTabButtons(serverCommandTab);
+        } else {
+          removeTabButtons(serverCommandTab);
+          serverCommandTab.scroll(scrollY);
+          addTabButtons(serverCommandTab);
         }
       }
     }
@@ -439,6 +470,17 @@ public class CommandGUIScreen extends Screen {
           break;
         }
       }
+      if (currentTab == serverCommandTab && serverCommandTab != null) {
+        if (tabArea != null) {
+          guiGraphics.enableScissor(tabArea.left(), tabArea.top(),
+              tabArea.right(), tabArea.bottom());
+        }
+        serverCommandTab.renderSeparator(guiGraphics);
+        serverCommandTab.renderCategoryScrollbar(guiGraphics);
+        if (tabArea != null) {
+          guiGraphics.disableScissor();
+        }
+      }
     }
   }
 
@@ -493,6 +535,10 @@ public class CommandGUIScreen extends Screen {
           break;
         }
       }
+      if (currentTab == serverCommandTab && serverCommandTab != null) {
+        scrollOffset = serverCommandTab.getScrollOffset();
+        maxScroll = serverCommandTab.getMaxScroll();
+      }
     }
 
     int scrollbarX = this.width - PADDING - SCROLLBAR_WIDTH;
@@ -546,6 +592,9 @@ public class CommandGUIScreen extends Screen {
             lastSelectedTabIndex = i + 2;
             break;
           }
+        }
+        if (currentTab == serverCommandTab && serverCommandTab != null) {
+          serverCommandTab.setSearchText(searchText);
         }
       }
 
