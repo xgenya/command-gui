@@ -312,5 +312,6 @@
   "screen.command-gui.placeholder_desc": "Placeholders open a GUI for quick input on execution. If the command is already finalized, no placeholder is needed.",
   "screen.command-gui.commands_label": "Commands:",
   "screen.command-gui.add_command_line": "Add to List",
-  "screen.command-gui.remove_command": "✗"
+  "screen.command-gui.remove_command": "✗",
+  "screen.command-gui.tab.server": "Server"
 }

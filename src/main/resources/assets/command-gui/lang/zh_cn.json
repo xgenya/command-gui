@@ -312,5 +312,6 @@
   "screen.command-gui.placeholder_desc": "占位符用于执行时弹出GUI快捷输入。如果指令内容已确定，则无需插入占位符。",
   "screen.command-gui.commands_label": "指令列表：",
   "screen.command-gui.add_command_line": "添加到列表",
-  "screen.command-gui.remove_command": "✗"
+  "screen.command-gui.remove_command": "✗",
+  "screen.command-gui.tab.server": "服务器"
 }

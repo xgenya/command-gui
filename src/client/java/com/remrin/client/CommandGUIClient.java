@@ -7,9 +7,13 @@ import com.remrin.client.config.SettingsConfig;
 import com.remrin.client.gui.ChainedCommandExecutor;
 import com.remrin.client.gui.CommandGUIScreen;
 import com.remrin.client.gui.TimedTaskManager;
+import com.remrin.client.sync.ServerCommandStore;
+import com.remrin.sync.ServerCommandPayload;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.KeyMapping;
@@ -22,27 +26,19 @@ import org.lwjgl.glfw.GLFW;
 /**
  * Client-side mod entry point. Responsible for initializing configs, registering the preset reload
  * listener, binding the hotkey, and driving per-tick logic (timed tasks and the delayed command
- * queue).
+ * queue). Also registers the eun_carpet server-sync payload receiver.
  */
 public class CommandGUIClient implements ClientModInitializer {
 
-  /**
-   * Key binding category for this mod (shown in the Controls settings screen)
-   */
   public static final Category CMD_GUI_CATEGORY = Category.register(
       Identifier.parse("command-gui:general"));
-  /**
-   * Key mapping to open/close the GUI, defaults to the C key
-   */
   private static KeyMapping openGuiKey;
 
   @Override
   public void onInitializeClient() {
-    // Load persistent custom command and settings configs
     CommandConfig.load();
     SettingsConfig.load();
 
-    // Register a resource reload listener: re-read preset JSON files after each resource pack load
     ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(
         new SimpleSynchronousResourceReloadListener() {
           @Override
@@ -64,8 +60,22 @@ public class CommandGUIClient implements ClientModInitializer {
         CMD_GUI_CATEGORY
     ));
 
+    // Register receiver for eun_carpet server command preset sync
+    ClientPlayNetworking.registerGlobalReceiver(ServerCommandPayload.TYPE, (payload, context) -> {
+      context.client().execute(() -> {
+        ServerCommandStore.update(payload.groups());
+        // If the GUI is currently open, reopen to show the server tab
+        if (context.client().screen instanceof CommandGUIScreen) {
+          context.client().setScreen(new CommandGUIScreen());
+        }
+      });
+    });
+
+    // Clear server commands on disconnect
+    ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
+        ServerCommandStore.clear());
+
     ClientTickEvents.END_CLIENT_TICK.register(client -> {
-      // Toggle the GUI: close it if already open, otherwise open the main screen
       while (openGuiKey.consumeClick()) {
         if (client.screen instanceof CommandGUIScreen) {
           client.setScreen(null);
@@ -74,7 +84,6 @@ public class CommandGUIClient implements ClientModInitializer {
         }
       }
 
-      // Advance timed tasks (countdown spawn/kill) and the delayed command queue every tick
       TimedTaskManager.tick();
       ChainedCommandExecutor.tickDelayed();
     });
