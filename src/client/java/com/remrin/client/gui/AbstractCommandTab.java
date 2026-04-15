@@ -329,7 +329,7 @@ public abstract class AbstractCommandTab implements Tab {
       return;
     }
 
-    int thumbHeight = Math.max(10,
+    int thumbHeight = Math.max(12,
         scrollbarHeight * getVisibleCategoryCount() / allCategoryButtons.size());
     int thumbY = scrollbarTop + (scrollbarHeight - thumbHeight) * categoryScrollOffset / maxScroll;
 

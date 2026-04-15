@@ -32,13 +32,13 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
   private static final int MARGIN = 16;
   private static final int INNER_PAD = 10;
   private static final int FIELD_WIDTH = 150;
-  private static final int FIELD_HEIGHT = 14;       // compact: was 16
+  private static final int FIELD_HEIGHT = 16;
   private static final int COL_GAP = 32;
   private static final int COORD_GAP = 8;
   private static final int ROT_GAP = 28;
   private static final int XYZ_FIELD_WIDTH = (FIELD_WIDTH - 2 * COORD_GAP) / 3; // 44
   private static final int YAW_PITCH_FIELD_WIDTH = (FIELD_WIDTH - ROT_GAP) / 2;  // 61
-  private static final int ACTION_BTN_HEIGHT = 14;  // compact: was 16
+  private static final int ACTION_BTN_HEIGHT = 16;
   private static final int ACTION_BTN_GAP = 4;
   private static final int ACTIONS_PER_ROW = 3;
   private static final int ACTION_BTN_WIDTH =
@@ -48,7 +48,7 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
   private static final int LABEL_COLOR = 0xFFAAAAAA;
   private static final int BORDER_COLOR = 0xFF555555;
   private static final int SELECTED_OVERLAY_COLOR = 0x6600CC00;
-  private static final int LABEL_HEIGHT = 10; // height reserved for label above field; was 12
+  private static final int LABEL_HEIGHT = 12;
 
   private static final String[] DIMENSIONS = {
       "minecraft:overworld",
@@ -444,8 +444,11 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
 
     int x = rightColX;
     int currentY = startY;
+    // Stop adding widgets before they overlap the save/cancel buttons
+    int maxY = this.height - 24 - 4;
 
     for (int i = 0; i < configCommands.size(); i++) {
+      if (currentY + FIELD_HEIGHT > maxY) break;
       final int idx = i;
       EditBox configField = new EditBox(this.font, x, currentY, FIELD_WIDTH - 18, FIELD_HEIGHT,
           Component.translatable("screen.command-gui.fakeplayer.config"));
@@ -473,14 +476,18 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
       currentY += rowGap;
     }
 
-    addConfigButton = Button.builder(
-        Component.translatable("screen.command-gui.fakeplayer.add_config"),
-        btn -> {
-          configCommands.add("");
-          rebuildConfigWidgets(getConfigStartY());
-        }
-    ).bounds(x, currentY, 80, 14).build();
-    this.addRenderableWidget(addConfigButton);
+    if (currentY + FIELD_HEIGHT <= maxY) {
+      addConfigButton = Button.builder(
+          Component.translatable("screen.command-gui.fakeplayer.add_config"),
+          btn -> {
+            configCommands.add("");
+            rebuildConfigWidgets(getConfigStartY());
+          }
+      ).bounds(x, currentY, 80, FIELD_HEIGHT).build();
+      this.addRenderableWidget(addConfigButton);
+    } else {
+      addConfigButton = null;
+    }
   }
 
   private void toggleAction(int actionIndex) {
@@ -832,7 +839,9 @@ public class AddFakePlayerCommandScreen extends BaseParentedScreen<CommandGUIScr
 
 // === Command preview (right column, below config section) ===
     List<String> commands = buildCommands();
-    int configEndY = configStartY + configCommands.size() * rowGap + 20;
+    // Use configFields.size() (actually-rendered rows) not configCommands.size(),
+    // since overflow protection may have truncated how many rows were added.
+    int configEndY = configStartY + configFields.size() * rowGap + 20;
 
     guiGraphics.drawString(this.font,
         Component.translatable("screen.command-gui.fakeplayer.config_desc"),

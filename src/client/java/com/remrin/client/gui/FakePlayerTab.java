@@ -180,7 +180,7 @@ public class FakePlayerTab implements Tab {
     int actionCols = 2;
     int rightWidth = actionCols * ACTION_BUTTON_WIDTH + (actionCols - 1) * ITEM_GAP;
     int totalWidth = leftWidth + SEPARATOR_WIDTH + rightWidth + 40;
-    int baseX = area.left() + (area.width() - totalWidth) / 2;
+    int baseX = area.left() + Math.max(0, (area.width() - totalWidth) / 2);
     playerListX = baseX;
     separatorX = baseX + leftWidth + 20;
   }

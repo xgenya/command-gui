@@ -397,7 +397,14 @@ public class CommandGUIScreen extends Screen {
     }
 
     if (currentTab == customTab) {
+      if (tabArea != null) {
+        guiGraphics.enableScissor(tabArea.left(), tabArea.top(),
+            tabArea.right(), tabArea.bottom());
+      }
       customTab.renderCategoryScrollbar(guiGraphics);
+      if (tabArea != null) {
+        guiGraphics.disableScissor();
+      }
 
       if (customTab.isEmpty()) {
         ScreenRectangle area = customTab.getArea();
@@ -408,13 +415,27 @@ public class CommandGUIScreen extends Screen {
         }
       }
     } else if (currentTab == fakePlayerTab) {
+      if (fakePlayerArea != null) {
+        guiGraphics.enableScissor(fakePlayerArea.left(), fakePlayerArea.top(),
+            fakePlayerArea.right(), fakePlayerArea.bottom());
+      }
       fakePlayerTab.render(guiGraphics, mouseX, mouseY);
       fakePlayerTab.renderFaces(guiGraphics);
       fakePlayerTab.renderScrollbar(guiGraphics);
+      if (fakePlayerArea != null) {
+        guiGraphics.disableScissor();
+      }
     } else {
       for (PresetCommandTab presetTab : presetTabs) {
         if (currentTab == presetTab) {
+          if (tabArea != null) {
+            guiGraphics.enableScissor(tabArea.left(), tabArea.top(),
+                tabArea.right(), tabArea.bottom());
+          }
           presetTab.renderCategoryScrollbar(guiGraphics);
+          if (tabArea != null) {
+            guiGraphics.disableScissor();
+          }
           break;
         }
       }
@@ -487,7 +508,7 @@ public class CommandGUIScreen extends Screen {
       return;
     }
 
-    int thumbHeight = Math.max(15,
+    int thumbHeight = Math.max(12,
         scrollbarHeight * scrollbarHeight / (scrollbarHeight + maxScroll * 24));
     int thumbY = scrollbarTop + (scrollbarHeight - thumbHeight) * scrollOffset / maxScroll;
 

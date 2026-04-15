@@ -162,7 +162,7 @@ public class BatchSpawnScreen extends BaseParentedScreen<Screen> {
     super.render(guiGraphics, mouseX, mouseY, partialTick);
 
     int centerX = this.width / 2;
-    int labelX = centerX - FIELD_WIDTH / 2 - LABEL_WIDTH / 2 - 5;
+    int labelX = Math.max(4, centerX - FIELD_WIDTH / 2 - LABEL_WIDTH / 2 - 5);
     int y = layoutTopY;
 
     guiGraphics.drawCenteredString(this.font, this.title, centerX, y, 0xFFFFFFFF);
