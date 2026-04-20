@@ -28,16 +28,6 @@ public class EditCommandScreen extends BaseCommandEditorScreen {
   }
 
   @Override
-  protected int getFieldStartY(int centerY) {
-    return centerY - 30;
-  }
-
-  @Override
-  protected int getTitleY(int centerY) {
-    return centerY - 45;
-  }
-
-  @Override
   protected String getInitialName() {
     return originalName;
   }
@@ -49,7 +39,9 @@ public class EditCommandScreen extends BaseCommandEditorScreen {
 
   @Override
   protected String getInitialCommand() {
-    return originalCommand != null ? originalCommand : "";
+    if (originalCommand == null) return "";
+    // Strip leading / so the field works with commandsOnly=true suggestions
+    return originalCommand.startsWith("/") ? originalCommand.substring(1) : originalCommand;
   }
 
   @Override
