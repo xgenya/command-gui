@@ -16,22 +16,40 @@ import net.minecraft.world.item.Items;
 /**
  * Custom command tab, displaying all commands created by the user via {@link AddCommandScreen}.
  * <p>
- * Each command button has three action buttons on its right side (edit, delete, move category),
- * distinguished by item icons. Supports text search and filtering by category.
+ * Each command row has a main {@link Button} for execution plus three small
+ * {@link ItemIconButton} widgets (edit / delete / move) placed to the right.
+ * Supports text search and filtering by category.
  */
 public class CustomCommandTab extends AbstractCommandTab {
 
-  private static final int ACTION_BTN_WIDTH = 18;
-  private static final int NUM_ACTION_BTNS = 3; // edit, delete, move
-  private static final int ACTION_BTNS_TOTAL = NUM_ACTION_BTNS * (ACTION_BTN_WIDTH + 1);
-  /**
-   * Item icons for the action buttons (edit / delete / move)
-   */
-  private static final ItemStack EDIT_ICON = new ItemStack(Items.WRITABLE_BOOK);
+  /** Width of the small "×" delete button appended to each deletable category tab. */
+  private static final int CAT_DEL_BTN_W = 12;
+  /** Width of the category name button when a delete button is present beside it. */
+  private static final int NARROW_CAT_WIDTH = CATEGORY_TAB_WIDTH - CAT_DEL_BTN_W - 1;
+
+  /** Width of each action icon button (smaller than default to stay compact). */
+  private static final int ACTION_BTN_WIDTH = 14;
+  private static final int NUM_ACTION_BTNS = 3;
+  private static final int ACTION_BTNS_TOTAL = NUM_ACTION_BTNS * ACTION_BTN_WIDTH + (NUM_ACTION_BTNS - 1);
+
+  /** Item icons for the action buttons (edit / delete / move). */
+  private static final ItemStack EDIT_ICON   = new ItemStack(Items.WRITABLE_BOOK);
   private static final ItemStack DELETE_ICON = new ItemStack(Items.LAVA_BUCKET);
-  private static final ItemStack MOVE_ICON = new ItemStack(Items.PURPLE_SHULKER_BOX);
+  private static final ItemStack MOVE_ICON   = new ItemStack(Items.PURPLE_SHULKER_BOX);
+
   private final List<FilteredCommand> filteredCommands = new ArrayList<>();
+  /** Extra action icon button widgets generated alongside each command button row. */
   private final List<Button> extraButtons = new ArrayList<>();
+  /**
+   * Parallel to {@link #allCategoryButtons}: holds the "×" delete button for each deletable
+   * user category, or {@code null} for the "All" button, "+" button, and the default category.
+   */
+  private final List<Button> allDeleteButtons = new ArrayList<>();
+  /**
+   * Visible (scrolled) subset of {@link #allDeleteButtons}, kept in sync with
+   * {@link #categoryButtons}.
+   */
+  private final List<Button> visibleDeleteButtons = new ArrayList<>();
   private String selectedCategoryId = null;
   public CustomCommandTab(Screen parent) {
     super(parent);
@@ -84,6 +102,7 @@ public class CustomCommandTab extends AbstractCommandTab {
   @Override
   protected void buildAllCategoryButtons() {
     allCategoryButtons.clear();
+    allDeleteButtons.clear();
 		if (area == null) {
 			return;
 		}
@@ -97,6 +116,7 @@ public class CustomCommandTab extends AbstractCommandTab {
     ).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
     allBtn.active = (selectedCategoryId != null);
     allCategoryButtons.add(allBtn);
+    allDeleteButtons.add(null); // "All" has no delete button
 
     for (CommandConfig.Category category : CommandConfig.getCategories()) {
       final String catId = category.id;
@@ -104,10 +124,32 @@ public class CustomCommandTab extends AbstractCommandTab {
           ? Component.literal(category.getDisplayName())
           : Component.translatable(category.nameKey);
 
+      boolean isDeletable = !catId.equals("default");
+      int catBtnWidth = isDeletable ? NARROW_CAT_WIDTH : CATEGORY_TAB_WIDTH;
+
       Button catBtn = Button.builder(btnText, btn -> onCategoryButtonClick(catId))
-          .bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
+          .bounds(x, y, catBtnWidth, CATEGORY_TAB_HEIGHT).build();
       catBtn.active = !catId.equals(selectedCategoryId);
       allCategoryButtons.add(catBtn);
+
+      if (isDeletable) {
+        boolean hasCommands = !category.commands.isEmpty();
+        Button delBtn = Button.builder(
+            Component.literal("×"),
+            btn -> deleteCategory(catId)
+        ).bounds(x + catBtnWidth + 1, y, CAT_DEL_BTN_W, CATEGORY_TAB_HEIGHT).build();
+        delBtn.active = !hasCommands;
+        if (hasCommands) {
+          delBtn.setTooltip(Tooltip.create(
+              Component.translatable("screen.command-gui.category_not_empty")));
+        } else {
+          delBtn.setTooltip(Tooltip.create(
+              Component.translatable("screen.command-gui.delete_category")));
+        }
+        allDeleteButtons.add(delBtn);
+      } else {
+        allDeleteButtons.add(null); // default category has no delete button
+      }
     }
 
     Button addCatBtn = Button.builder(
@@ -116,33 +158,60 @@ public class CustomCommandTab extends AbstractCommandTab {
     ).bounds(x, y, CATEGORY_TAB_WIDTH, CATEGORY_TAB_HEIGHT).build();
     addCatBtn.setTooltip(Tooltip.create(Component.translatable("screen.command-gui.add_category")));
     allCategoryButtons.add(addCatBtn);
+    allDeleteButtons.add(null); // "+" has no delete button
   }
 
   @Override
   protected Button buildCommandButton(int index, int x, int y, int width, int height) {
     FilteredCommand cmd = filteredCommands.get(index);
-    // Make command button narrower to leave room for action buttons
-    int cmdBtnWidth = width - ACTION_BTNS_TOTAL;
-    Button btn = Button.builder(
-        Component.literal(cmd.name()),
-        b -> handleCommand(cmd.entry())
-    ).bounds(x, y, cmdBtnWidth, height).build();
+    final String cmdName = cmd.name();
+    final CommandConfig.CommandEntry cmdEntry = cmd.entry();
 
-    java.util.List<String> commands = cmd.entry().getCommands();
+    java.util.List<String> commands = cmdEntry.getCommands();
     String commandText = String.join("\n", commands);
     String tooltipText = commandText;
-    if (cmd.entry().description != null && !cmd.entry().description.isEmpty()) {
-      tooltipText = cmd.entry().description + "\n§7" + commandText;
+    if (cmdEntry.description != null && !cmdEntry.description.isEmpty()) {
+      tooltipText = cmdEntry.description + "\n§7" + commandText;
     }
-    btn.setTooltip(Tooltip.create(Component.literal(tooltipText)));
+
+    int cmdWidth = width - ACTION_BTNS_TOTAL;
+    Button btn = Button.builder(Component.literal(cmdName), b -> handleCommand(cmdEntry))
+        .bounds(x, y, cmdWidth, height)
+        .tooltip(Tooltip.create(Component.literal(tooltipText)))
+        .build();
     return btn;
   }
 
-  /**
-   * Rebuilds the command buttons and generates edit, delete, and move action buttons to the right
-   * of each command button. Action buttons are stored in {@link #extraButtons} and registered/
-   * unregistered alongside the main buttons.
-   */
+  @Override
+  protected void onCommandButtonBuilt(int index, int x, int y, int width, int height) {
+    FilteredCommand cmd = filteredCommands.get(index);
+    final String cmdName = cmd.name();
+    final CommandConfig.CommandEntry cmdEntry = cmd.entry();
+
+    int cmdWidth = width - ACTION_BTNS_TOTAL;
+    int actionX = x + cmdWidth;
+
+    extraButtons.add(new ItemIconButton(
+        actionX, y, ACTION_BTN_WIDTH, height,
+        EDIT_ICON,
+        Component.translatable("screen.command-gui.action.edit"),
+        btn -> editCommand(cmdName, cmdEntry)));
+    actionX += ACTION_BTN_WIDTH + 1;
+
+    extraButtons.add(new ItemIconButton(
+        actionX, y, ACTION_BTN_WIDTH, height,
+        DELETE_ICON,
+        Component.translatable("screen.command-gui.action.delete"),
+        btn -> deleteCommand(cmdName)));
+    actionX += ACTION_BTN_WIDTH + 1;
+
+    extraButtons.add(new ItemIconButton(
+        actionX, y, ACTION_BTN_WIDTH, height,
+        MOVE_ICON,
+        Component.translatable("screen.command-gui.action.move"),
+        btn -> moveCommand(cmdName)));
+  }
+
   @Override
   protected void rebuildButtons() {
     extraButtons.clear();
@@ -150,43 +219,34 @@ public class CustomCommandTab extends AbstractCommandTab {
   }
 
   /**
-   * Called by the base class after each command button is built. Creates the edit, delete, and move
-   * action buttons positioned to the right of the command button.
+   * Keeps {@link #visibleDeleteButtons} in sync with the visible category buttons: for each
+   * visible slot that has a corresponding delete button, position and collect it.
    */
   @Override
-  protected void onCommandButtonBuilt(int index, int x, int y, int width, int height) {
-    FilteredCommand cmd = filteredCommands.get(index);
-    final String cmdName = cmd.name();
-    final CommandConfig.CommandEntry cmdEntry = cmd.entry();
+  protected void rebuildVisibleCategoryButtons() {
+    visibleDeleteButtons.clear();
+    super.rebuildVisibleCategoryButtons();
 
-    int cmdBtnWidth = width - ACTION_BTNS_TOTAL;
-    int actionX = x + cmdBtnWidth + 1;
+    if (area == null) return;
+    int startIndex = getCategoryScrollOffset();
+    int visibleCount = getVisibleCategoryCount();
+    int endIndex = Math.min(startIndex + visibleCount, allDeleteButtons.size());
+    for (int i = startIndex; i < endIndex; i++) {
+      Button delBtn = allDeleteButtons.get(i);
+      if (delBtn != null) {
+        int y = area.top() + (i - startIndex) * (CATEGORY_TAB_HEIGHT + CATEGORY_TAB_GAP);
+        delBtn.setY(y);
+        visibleDeleteButtons.add(delBtn);
+      }
+    }
+  }
 
-    // Edit button
-    ItemIconButton editBtn = new ItemIconButton(
-        actionX, y, ACTION_BTN_WIDTH, height,
-        EDIT_ICON,
-        Component.translatable("screen.command-gui.edit"),
-        b -> editCommand(cmdName, cmdEntry));
-    extraButtons.add(editBtn);
-    actionX += ACTION_BTN_WIDTH + 1;
-
-    // Delete button
-    ItemIconButton deleteBtn = new ItemIconButton(
-        actionX, y, ACTION_BTN_WIDTH, height,
-        DELETE_ICON,
-        Component.translatable("screen.command-gui.delete"),
-        b -> deleteCommand(cmdName));
-    extraButtons.add(deleteBtn);
-    actionX += ACTION_BTN_WIDTH + 1;
-
-    // Move button
-    ItemIconButton moveBtn = new ItemIconButton(
-        actionX, y, ACTION_BTN_WIDTH, height,
-        MOVE_ICON,
-        Component.translatable("screen.command-gui.move"),
-        b -> moveCommand(cmdName));
-    extraButtons.add(moveBtn);
+  /** Returns visible category buttons plus their paired delete buttons. */
+  @Override
+  public List<Button> getCategoryButtons() {
+    List<Button> all = new ArrayList<>(categoryButtons);
+    all.addAll(visibleDeleteButtons);
+    return all;
   }
 
   /**
@@ -206,7 +266,27 @@ public class CustomCommandTab extends AbstractCommandTab {
 
   private void deleteCommand(String name) {
     CommandConfig.removeCommand(name);
-    CommandGUIScreen parentScreen = (CommandGUIScreen) parent;
+    notifyCategoryChange(() -> {
+      buildFilteredCommands();
+      buildAllCategoryButtons();
+      rebuildVisibleCategoryButtons();
+      rebuildButtons();
+    });
+  }
+
+  /**
+   * Deletes a user category. Only allowed when the category is empty; the button is disabled when
+   * the category still has commands, so this guard is a safety net.
+   */
+  private void deleteCategory(String categoryId) {
+    CommandConfig.Category cat = CommandConfig.getCategory(categoryId);
+    if (cat == null || !cat.commands.isEmpty()) {
+      return; // should not happen since the button is disabled, but guard anyway
+    }
+    if (categoryId.equals(selectedCategoryId)) {
+      selectedCategoryId = null;
+    }
+    CommandConfig.removeCategory(categoryId);
     notifyCategoryChange(() -> {
       buildFilteredCommands();
       buildAllCategoryButtons();

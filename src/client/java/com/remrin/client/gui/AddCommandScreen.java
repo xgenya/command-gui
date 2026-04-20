@@ -29,16 +29,6 @@ public class AddCommandScreen extends BaseCommandEditorScreen {
   }
 
   @Override
-  protected int getFieldStartY(int centerY) {
-    return centerY - 40;
-  }
-
-  @Override
-  protected int getTitleY(int centerY) {
-    return centerY - 55;
-  }
-
-  @Override
   protected String getInitialName() {
     return "";
   }
@@ -59,11 +49,6 @@ public class AddCommandScreen extends BaseCommandEditorScreen {
   }
 
   @Override
-  protected Component getCommandHint() {
-    return Component.translatable("screen.command-gui.command_hint");
-  }
-
-  @Override
   protected void init() {
     categories = CommandConfig.getCategories();
     if (initialCategoryId != null) {
@@ -78,27 +63,27 @@ public class AddCommandScreen extends BaseCommandEditorScreen {
   }
 
   @Override
-  protected int initExtraRow(int fieldX, int currentY) {
-    if (categories.size() > 1) {
-      int newY = currentY + ROW_GAP;
-      categoryButton = Button.builder(getCategoryDisplayName(), btn -> cycleCategory())
-          .bounds(fieldX, newY, CONTENT_WIDTH, INPUT_HEIGHT).build();
-      this.addRenderableWidget(categoryButton);
-      return newY;
-    }
-    return currentY;
+  protected int getNameFieldWidth(int leftWidth) {
+    return categories.size() > 1 ? leftWidth - leftWidth / 3 - BTN_GAP : leftWidth;
   }
 
   @Override
-  protected int renderExtraLabel(GuiGraphics guiGraphics, int labelX, int currentY) {
+  protected int initExtraRow(int fieldX, int currentY) {
     if (categories.size() > 1) {
-      int newY = currentY + ROW_GAP;
-      guiGraphics.drawString(this.font, Component.translatable("screen.command-gui.category"),
-          labelX - this.font.width(Component.translatable("screen.command-gui.category")), newY + 4,
-          0xFFAAAAAA);
-      return newY;
+      int leftWidth = effectiveLeftColWidth();
+      int catBtnWidth = leftWidth / 3;
+      int nameFieldWidth = getNameFieldWidth(leftWidth);
+      categoryButton = Button.builder(getCategoryDisplayName(), btn -> cycleCategory())
+          .bounds(fieldX + nameFieldWidth + BTN_GAP, nameField.getY(), catBtnWidth, INPUT_HEIGHT)
+          .build();
+      this.addRenderableWidget(categoryButton);
     }
-    return currentY;
+    return currentY;  // inline — no extra row, description goes at currentY
+  }
+
+  @Override
+  protected int renderExtraLabel(GuiGraphics guiGraphics, int fieldX, int currentY) {
+    return currentY;  // category is shown inline in the button; no separate label needed
   }
 
   @Override
@@ -123,14 +108,16 @@ public class AddCommandScreen extends BaseCommandEditorScreen {
   }
 
   private Component getCategoryDisplayName() {
+    Component catName;
     if (categories.isEmpty()) {
-      return Component.translatable("screen.command-gui.category.default");
+      catName = Component.translatable("screen.command-gui.category.default");
+    } else {
+      CommandConfig.Category cat = categories.get(selectedCategoryIndex);
+      catName = cat.getDisplayName() != null
+          ? Component.literal(cat.getDisplayName())
+          : Component.translatable(cat.nameKey);
     }
-    CommandConfig.Category cat = categories.get(selectedCategoryIndex);
-    if (cat.getDisplayName() != null) {
-      return Component.literal(cat.getDisplayName());
-    }
-    return Component.translatable(cat.nameKey);
+    return Component.translatable("screen.command-gui.save_to_category", catName);
   }
 
   @Override
@@ -146,8 +133,4 @@ public class AddCommandScreen extends BaseCommandEditorScreen {
     }
   }
 
-  @Override
-  protected boolean hasExtraRow() {
-    return categories.size() > 1;
-  }
 }
